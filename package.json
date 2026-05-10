@@ -1,0 +1,87 @@
+{
+  "name": "smart-dependency-assistant",
+  "displayName": "Smart Dependency Assistant",
+  "description": "Identify and resolve dependency-related issues while coding. Monitor terminal errors, detect dependency problems, and suggest installation commands.",
+  "version": "0.1.0",
+  "publisher": "DependencyAssistant",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Debuggers",
+    "Other"
+  ],
+  "keywords": [
+    "dependency",
+    "error",
+    "module",
+    "package",
+    "pip",
+    "npm"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "smartDependencyAssistant.openPanel",
+        "title": "Open Smart Dependency Assistant"
+      },
+      {
+        "command": "smartDependencyAssistant.installDependency",
+        "title": "Install Dependency"
+      },
+      {
+        "command": "smartDependencyAssistant.copyCommand",
+        "title": "Copy Install Command"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "smartDependencyPanel",
+          "name": "Dependency Issues",
+          "when": "smartDependencyAssistant.hasIssues"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "smartDependencyPanel",
+          "title": "Smart Dependency Assistant",
+          "icon": "media/icon.svg"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vscode/test-electron": "^2.3.8",
+    "esbuild": "^0.19.10",
+    "eslint": "^8.55.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "5.3.3"
+  },
+  "dependencies": {}
+}
