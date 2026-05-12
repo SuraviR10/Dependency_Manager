@@ -5,6 +5,8 @@
 
 import * as vscode from 'vscode';
 import { ErrorAnalyzer } from './analyzer/errorAnalyzer';
+import { DependencyScanner } from './analyzer/dependencyScanner';
+import { EnvironmentManager } from './services/environmentManager';
 import { TerminalMonitor } from './terminal/terminalMonitor';
 import { InstallCommandGenerator } from './commands/installCommandGenerator';
 import { CommandRegistry } from './commands/commandRegistry';
@@ -13,6 +15,8 @@ import { NotificationManager } from './ui/notificationManager';
 import { DependencyIssue } from './types/types';
 
 let errorAnalyzer: ErrorAnalyzer;
+let dependencyScanner: DependencyScanner;
+let environmentManager: EnvironmentManager;
 let terminalMonitor: TerminalMonitor;
 let commandGenerator: InstallCommandGenerator;
 let commandRegistry: CommandRegistry;
@@ -29,11 +33,13 @@ export function activate(context: vscode.ExtensionContext) {
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
 
   errorAnalyzer = new ErrorAnalyzer(workspacePath);
-  terminalMonitor = new TerminalMonitor(errorAnalyzer);
+  dependencyScanner = new DependencyScanner(workspacePath);
   commandGenerator = new InstallCommandGenerator();
+  environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context);
   commandRegistry = new CommandRegistry(context, commandGenerator);
   webviewProvider = new WebviewProvider(context, commandGenerator);
   notificationManager = new NotificationManager();
+  terminalMonitor = new TerminalMonitor(errorAnalyzer);
 
   // Register commands
   commandRegistry.registerCommands();
@@ -48,13 +54,54 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Setup event listeners
   setupTerminalListener(context);
+  setupWorkspaceListeners(context);
   setupCommandHandlers(context);
   setupWebviewHandlers(context);
 
   // Start monitoring
   terminalMonitor.startMonitoring();
 
+  // Start initial workspace scan and environment preparation
+  refreshHealthDashboard();
+  void environmentManager.ensureProjectEnvironment();
+
   console.log('✅ All modules initialized');
+}
+
+/**
+ * Refresh the project's health dashboard from the current workspace state.
+ */
+async function refreshHealthDashboard(): Promise<void> {
+  if (!dependencyScanner || !webviewProvider) {
+    return;
+  }
+
+  try {
+    const scan = await dependencyScanner.scanWorkspace();
+    const summary = dependencyScanner.createSummary(scan);
+    webviewProvider.displayDashboard(summary);
+  } catch (error) {
+    console.error('[Extension] Failed to refresh health dashboard:', error);
+  }
+}
+
+/**
+ * Register workspace watchers and reactive listeners.
+ */
+function setupWorkspaceListeners(context: vscode.ExtensionContext): void {
+  const saveListener = vscode.workspace.onDidSaveTextDocument(() => {
+    void refreshHealthDashboard();
+  });
+
+  const openListener = vscode.workspace.onDidOpenTextDocument(() => {
+    void refreshHealthDashboard();
+  });
+
+  const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+    void refreshHealthDashboard();
+  });
+
+  context.subscriptions.push(saveListener, openListener, workspaceListener);
 }
 
 /**
@@ -214,7 +261,7 @@ async function autoInstallDependency(issue: DependencyIssue): Promise<void> {
 /**
  * Process terminal output and detect issues (auto-install silently)
  */
-function processTerminalOutput(output: string): void {
+async function processTerminalOutput(output: string): Promise<void> {
   if (!output || output.length === 0) {
     return;
   }
@@ -224,7 +271,8 @@ function processTerminalOutput(output: string): void {
   if (result.detected && result.issue) {
     const issue = result.issue;
     console.log(`[Extension] Dependency issue detected: ${issue.packageName}`);
-    autoInstallDependency(issue);
+    webviewProvider.displayIssue(issue);
+    await autoInstallDependency(issue);
   }
 }
 
@@ -242,6 +290,22 @@ function setupCommandHandlers(_context: vscode.ExtensionContext): void {
     console.log(`[Extension] Copy command: ${command}`);
     notificationManager.showStatusMessage(`Copied: ${command}`, 3000);
   });
+
+  commandRegistry.onRefresh(async () => {
+    await handleRefreshCommand();
+  });
+
+  commandRegistry.onRepair(async () => {
+    await handleRepairCommand();
+  });
+
+  commandRegistry.onCreateEnvironment(async () => {
+    await handleCreateEnvironmentCommand();
+  });
+
+  commandRegistry.onCleanup(async () => {
+    await handleCleanupCommand();
+  });
 }
 
 /**
@@ -257,7 +321,7 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
     const command = commandGenerator.generateCommand(issue);
 
     // Validate command safety
-    if (!commandGenerator.isCommandSafe(command.command)) {
+      if (!commandGenerator.isCommandSafe(command.command)) {
       throw new Error('Command validation failed');
     }
 
@@ -292,6 +356,46 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
   }
 }
 
+async function handleRefreshCommand(): Promise<void> {
+  await refreshHealthDashboard();
+  notificationManager.showStatusMessage('Dependency dashboard updated', 3000);
+}
+
+async function handleRepairCommand(): Promise<void> {
+  if (!environmentManager) {
+    return;
+  }
+
+  const plan = await environmentManager.createRepairPlan();
+  vscode.window.showInformationMessage(plan, { modal: false });
+}
+
+async function handleCreateEnvironmentCommand(): Promise<void> {
+  if (!environmentManager) {
+    return;
+  }
+
+  const summary = await environmentManager.ensureProjectEnvironment();
+  if (summary) {
+    webviewProvider.displayDashboard(summary);
+    vscode.window.showInformationMessage('Project environment setup completed or updated.');
+  }
+}
+
+async function handleCleanupCommand(): Promise<void> {
+  const scan = await dependencyScanner.scanWorkspace();
+  const unused = Array.from(scan.unusedPackages);
+
+  if (unused.length === 0) {
+    vscode.window.showInformationMessage('No unused dependencies detected.');
+    return;
+  }
+
+  vscode.window.showWarningMessage(
+    `Unused dependencies: ${unused.join(', ')}. Consider removing them from package.json or requirements.txt.`
+  );
+}
+
 /**
  * Setup webview message handlers
  */
@@ -312,6 +416,24 @@ function setupWebviewHandlers(_context: vscode.ExtensionContext): void {
   webviewProvider.onDismissIssue((issueId: string) => {
     console.log(`[Extension] Issue dismissed: ${issueId}`);
     terminalMonitor.clearTerminalBuffer(vscode.window.activeTerminal!);
+  });
+
+  // Handle panel actions
+  webviewProvider.onPanelAction(async (action: 'refresh' | 'repair' | 'createEnvironment' | 'cleanup') => {
+    switch (action) {
+      case 'refresh':
+        await handleRefreshCommand();
+        break;
+      case 'repair':
+        await handleRepairCommand();
+        break;
+      case 'createEnvironment':
+        await handleCreateEnvironmentCommand();
+        break;
+      case 'cleanup':
+        await handleCleanupCommand();
+        break;
+    }
   });
 }
 

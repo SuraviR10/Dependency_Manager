@@ -12,6 +12,10 @@ export class CommandRegistry {
   private commandGenerator: InstallCommandGenerator;
   private onInstallRequested: ((issue: DependencyIssue) => void) | null = null;
   private onCopyCommand: ((command: string, packageName: string) => void) | null = null;
+  private onRefreshRequested: (() => void) | null = null;
+  private onRepairRequested: (() => void) | null = null;
+  private onCreateEnvironmentRequested: (() => void) | null = null;
+  private onCleanupRequested: (() => void) | null = null;
 
   constructor(context: vscode.ExtensionContext, commandGenerator: InstallCommandGenerator) {
     this.context = context;
@@ -46,10 +50,50 @@ export class CommandRegistry {
       }
     );
 
+    const refreshCommand = vscode.commands.registerCommand(
+      'smartDependencyAssistant.refreshDependencies',
+      () => {
+        if (this.onRefreshRequested) {
+          this.onRefreshRequested();
+        }
+      }
+    );
+
+    const repairCommand = vscode.commands.registerCommand(
+      'smartDependencyAssistant.repairProject',
+      () => {
+        if (this.onRepairRequested) {
+          this.onRepairRequested();
+        }
+      }
+    );
+
+    const createEnvironmentCommand = vscode.commands.registerCommand(
+      'smartDependencyAssistant.createEnvironment',
+      () => {
+        if (this.onCreateEnvironmentRequested) {
+          this.onCreateEnvironmentRequested();
+        }
+      }
+    );
+
+    const cleanupCommand = vscode.commands.registerCommand(
+      'smartDependencyAssistant.cleanupEnvironment',
+      () => {
+        if (this.onCleanupRequested) {
+          this.onCleanupRequested();
+        }
+      }
+    );
+
     // Register all commands
     this.context.subscriptions.push(openPanelCommand);
     this.context.subscriptions.push(installCommand);
     this.context.subscriptions.push(copyCommand);
+    this.context.subscriptions.push(refreshCommand);
+    this.context.subscriptions.push(repairCommand);
+    this.context.subscriptions.push(createEnvironmentCommand);
+    this.context.subscriptions.push(cleanupCommand);
 
     console.log('[CommandRegistry] Registered all commands');
   }
@@ -104,6 +148,34 @@ export class CommandRegistry {
    */
   public onCopy(callback: (command: string, packageName: string) => void): void {
     this.onCopyCommand = callback;
+  }
+
+  /**
+   * Register callback for refresh requests
+   */
+  public onRefresh(callback: () => void): void {
+    this.onRefreshRequested = callback;
+  }
+
+  /**
+   * Register callback for repair requests
+   */
+  public onRepair(callback: () => void): void {
+    this.onRepairRequested = callback;
+  }
+
+  /**
+   * Register callback for environment creation requests
+   */
+  public onCreateEnvironment(callback: () => void): void {
+    this.onCreateEnvironmentRequested = callback;
+  }
+
+  /**
+   * Register callback for cleanup requests
+   */
+  public onCleanup(callback: () => void): void {
+    this.onCleanupRequested = callback;
   }
 
   /**
@@ -199,6 +271,10 @@ export class CommandRegistry {
       'smartDependencyAssistant.openPanel',
       'smartDependencyAssistant.installDependency',
       'smartDependencyAssistant.copyCommand',
+      'smartDependencyAssistant.refreshDependencies',
+      'smartDependencyAssistant.repairProject',
+      'smartDependencyAssistant.createEnvironment',
+      'smartDependencyAssistant.cleanupEnvironment',
     ];
   }
 }

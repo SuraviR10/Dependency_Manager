@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { DependencyIssue, WebviewMessage, SupportedLanguage } from '../types/types';
+import { DependencyIssue, DependencySummary, WebviewMessage, SupportedLanguage } from '../types/types';
 import { InstallCommandGenerator } from '../commands/installCommandGenerator';
 
 export class WebviewProvider implements vscode.WebviewViewProvider {
@@ -14,6 +14,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
   private errorMessage: string | null = null;
   private context: vscode.ExtensionContext;
   private commandGenerator: InstallCommandGenerator;
+  private onPanelActionCallback: ((action: 'refresh' | 'repair' | 'createEnvironment' | 'cleanup') => void) | null = null;
 
   // Callbacks
   private onInstallClick: ((issue: DependencyIssue) => void) | null = null;
@@ -130,6 +131,15 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         }
         break;
 
+      case 'refresh':
+      case 'repair':
+      case 'createEnvironment':
+      case 'cleanup':
+        if (this.onPanelActionCallback) {
+          this.onPanelActionCallback(message.command);
+        }
+        break;
+
       case 'retry':
         this.installationStatus = 'idle';
         if (this.view && this.currentIssue) {
@@ -171,6 +181,96 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
    */
   public onDismissIssue(callback: (issueId: string) => void): void {
     this.onDismiss = callback;
+  }
+
+  /**
+   * Register panel action callback
+   */
+  public onPanelAction(callback: (action: 'refresh' | 'repair' | 'createEnvironment' | 'cleanup') => void): void {
+    this.onPanelActionCallback = callback;
+  }
+
+  /**
+   * Display summary dashboard in the webview
+   */
+  public displayDashboard(summary: DependencySummary): void {
+    this.currentIssue = null;
+    this.installationStatus = 'idle';
+    this.errorMessage = null;
+
+    if (this.view) {
+      this.view.webview.html = this.getDashboardHtml(summary);
+      this.view.show?.(true);
+    }
+  }
+
+  private getDashboardHtml(summary: DependencySummary): string {
+    const css = this.getStyles();
+    const languageList = summary.languages.map(lang => this.getLanguageDisplayName(lang)).join(', ') || 'Unknown';
+    const missingPackages = summary.missingPackages.length > 0
+      ? this.escapeHtml(summary.missingPackages.join(', '))
+      : 'None detected';
+    const unusedPackages = summary.unusedPackages.length > 0
+      ? this.escapeHtml(summary.unusedPackages.join(', '))
+      : 'None detected';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${css}
+      </head>
+      <body>
+        <div class="container">
+          <div class="dashboard-header">
+            <div>
+              <h2>Project Health Dashboard</h2>
+              <p class="secondary-text">Scanning ${summary.scannedFiles} file(s) for dependency issues.</p>
+            </div>
+            <div class="badge">Health ${summary.healthScore}%</div>
+          </div>
+
+          <div class="card summary-card">
+            <div class="summary-row"><strong>Languages:</strong> ${languageList}</div>
+            <div class="summary-row"><strong>Declared packages:</strong> ${summary.declaredPackages.length}</div>
+            <div class="summary-row"><strong>Used packages:</strong> ${summary.usedPackages.length}</div>
+            <div class="summary-row"><strong>Missing packages:</strong> ${summary.missingPackages.length}</div>
+            <div class="summary-row"><strong>Unused packages:</strong> ${summary.unusedPackages.length}</div>
+            <div class="summary-row"><strong>Environment:</strong> ${this.escapeHtml(summary.environmentStatus)}</div>
+          </div>
+
+          <div class="card">
+            <h3>Missing packages</h3>
+            <p>${missingPackages}</p>
+          </div>
+
+          <div class="card">
+            <h3>Unused declarations</h3>
+            <p>${unusedPackages}</p>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary" onclick="refresh()">🔄 Refresh Scan</button>
+            <button class="btn btn-secondary" onclick="createEnvironment()">⚙️ Create Env</button>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="cleanup()">🧹 Cleanup</button>
+            <button class="btn btn-secondary" onclick="repair()">🛠️ Repair</button>
+          </div>
+        </div>
+      </body>
+      <script>
+        const vscode = acquireVsCodeApi();
+        function refresh() { vscode.postMessage({ command: 'refresh' }); }
+        function repair() { vscode.postMessage({ command: 'repair' }); }
+        function createEnvironment() { vscode.postMessage({ command: 'createEnvironment' }); }
+        function cleanup() { vscode.postMessage({ command: 'cleanup' }); }
+      </script>
+      </html>
+    `;
   }
 
   /**

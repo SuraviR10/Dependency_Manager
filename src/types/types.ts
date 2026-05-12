@@ -62,6 +62,17 @@ export interface AnalysisResult {
   language: SupportedLanguage;
 }
 
+export interface DependencySummary {
+  languages: SupportedLanguage[];
+  usedPackages: string[];
+  declaredPackages: string[];
+  missingPackages: string[];
+  unusedPackages: string[];
+  healthScore: number;
+  environmentStatus: string;
+  scannedFiles: number;
+}
+
 /**
  * Represents a dependency installation command
  */
@@ -87,7 +98,7 @@ export interface WebviewData {
  * Message from webview to extension
  */
 export interface WebviewMessage {
-  command: 'install' | 'copyCommand' | 'dismiss' | 'retry';
+  command: 'install' | 'copyCommand' | 'dismiss' | 'retry' | 'refresh' | 'repair' | 'createEnvironment' | 'cleanup';
   issueId?: string;
 }
 

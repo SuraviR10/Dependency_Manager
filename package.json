@@ -21,7 +21,12 @@
     "npm"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:smartDependencyAssistant.openPanel",
+    "onCommand:smartDependencyAssistant.refreshDependencies",
+    "onCommand:smartDependencyAssistant.createEnvironment",
+    "onCommand:smartDependencyAssistant.cleanupEnvironment",
+    "onCommand:smartDependencyAssistant.repairProject"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -29,6 +34,22 @@
       {
         "command": "smartDependencyAssistant.openPanel",
         "title": "Open Smart Dependency Assistant"
+      },
+      {
+        "command": "smartDependencyAssistant.refreshDependencies",
+        "title": "Refresh Dependency Scan"
+      },
+      {
+        "command": "smartDependencyAssistant.createEnvironment",
+        "title": "Create Project Environment"
+      },
+      {
+        "command": "smartDependencyAssistant.cleanupEnvironment",
+        "title": "Cleanup Unused Dependencies"
+      },
+      {
+        "command": "smartDependencyAssistant.repairProject",
+        "title": "Repair Project Environment"
       },
       {
         "command": "smartDependencyAssistant.installDependency",
@@ -43,16 +64,15 @@
       "explorer": [
         {
           "id": "smartDependencyPanel",
-          "name": "Dependency Issues",
-          "when": "smartDependencyAssistant.hasIssues"
+          "name": "Smart Dependency Assistant"
         }
       ]
     },
     "viewsContainers": {
-      "panel": [
+      "explorer": [
         {
-          "id": "smartDependencyPanel",
-          "title": "Smart Dependency Assistant",
+          "id": "smartDependencyAssistant",
+          "title": "Smart Dependency",
           "icon": "media/icon.svg"
         }
       ]
