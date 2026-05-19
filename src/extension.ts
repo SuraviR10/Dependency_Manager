@@ -7,20 +7,24 @@ import * as vscode from 'vscode';
 import { ErrorAnalyzer } from './analyzer/errorAnalyzer';
 import { DependencyScanner } from './analyzer/dependencyScanner';
 import { EnvironmentManager } from './services/environmentManager';
+import { ActivityTracker } from './services/activityTracker';
 import { TerminalMonitor } from './terminal/terminalMonitor';
 import { InstallCommandGenerator } from './commands/installCommandGenerator';
 import { CommandRegistry } from './commands/commandRegistry';
 import { WebviewProvider } from './ui/webviewProvider';
+import { ActivityPanelProvider } from './ui/activityPanelProvider';
 import { NotificationManager } from './ui/notificationManager';
 import { DependencyIssue } from './types/types';
 
 let errorAnalyzer: ErrorAnalyzer;
 let dependencyScanner: DependencyScanner;
 let environmentManager: EnvironmentManager;
+let activityTracker: ActivityTracker;
 let terminalMonitor: TerminalMonitor;
 let commandGenerator: InstallCommandGenerator;
 let commandRegistry: CommandRegistry;
 let webviewProvider: WebviewProvider;
+let activityPanelProvider: ActivityPanelProvider;
 let notificationManager: NotificationManager;
 
 /**
@@ -36,19 +40,25 @@ export function activate(context: vscode.ExtensionContext) {
   dependencyScanner = new DependencyScanner(workspacePath);
   commandGenerator = new InstallCommandGenerator();
   environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context);
+  activityTracker = new ActivityTracker();
   commandRegistry = new CommandRegistry(context, commandGenerator);
   webviewProvider = new WebviewProvider(context, commandGenerator);
+  activityPanelProvider = new ActivityPanelProvider(context, activityTracker);
   notificationManager = new NotificationManager();
   terminalMonitor = new TerminalMonitor(errorAnalyzer);
 
   // Register commands
   commandRegistry.registerCommands();
 
-  // Register webview provider
+  // Register webview providers
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       'smartDependencyPanel',
       webviewProvider
+    ),
+    vscode.window.registerWebviewViewProvider(
+      'smartActivityPanel',
+      activityPanelProvider
     )
   );
 
@@ -64,6 +74,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Start initial workspace scan and environment preparation
   refreshHealthDashboard();
   void environmentManager.ensureProjectEnvironment();
+
+  // Log initial activity
+  activityTracker.logActivity(
+    'scan-completed' as any,
+    'info' as any,
+    '🚀 Smart Dependency Assistant Ready',
+    {
+      description: 'Extension initialized and monitoring for dependency issues'
+    }
+  );
 
   console.log('✅ All modules initialized');
 }
@@ -216,6 +236,12 @@ function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
       ? `pip install ${packageName}`
       : `npm install ${packageName}`;
 
+    // Log to activity tracker
+    activityTracker.logErrorDetected(
+      'Missing Import',
+      packageName
+    );
+
     console.log(`[Extension] Auto-installing ${packageName} as ${language}`);
     commandRegistry.executeInTerminal(command, false);
   }
@@ -251,9 +277,15 @@ async function autoInstallDependency(issue: DependencyIssue): Promise<void> {
 
     console.log(`[Extension] Auto-installing ${issue.packageName}`);
 
+    // Log activity
+    activityTracker.logDependencyInstalled(issue.packageName);
+
     // Execute in terminal silently (don't show terminal)
     await commandRegistry.executeInTerminal(command.command, false);
   } catch (error) {
+    // Log failed installation
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    activityTracker.logDependencyFailed(issue.packageName, errorMsg);
     console.error(`[Extension] Auto-install error for ${issue.packageName}:`, error);
   }
 }
@@ -332,6 +364,10 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
       webviewProvider.updateInstallationStatus('success');
       notificationManager.showInstallationSuccess(issue.packageName);
 
+      // Log to activity tracker
+      activityTracker.logDependencyInstalled(issue.packageName);
+      activityTracker.logCommand(command.command, issue.packageName, true);
+
       // Show completion message
       const response = await notificationManager.showWithActions(
         `✓ ${issue.packageName} installation initiated. Check the terminal for progress.`,
@@ -346,6 +382,7 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
       }
     } else {
       webviewProvider.updateInstallationStatus('error', 'Failed to open terminal');
+      activityTracker.logDependencyFailed(issue.packageName, 'Failed to open terminal');
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -353,11 +390,13 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
 
     webviewProvider.updateInstallationStatus('error', errorMessage);
     notificationManager.showInstallationError(issue.packageName, errorMessage);
+    activityTracker.logDependencyFailed(issue.packageName, errorMessage);
   }
 }
 
 async function handleRefreshCommand(): Promise<void> {
   await refreshHealthDashboard();
+  activityTracker.logScanCompleted(0, 0, 0);
   notificationManager.showStatusMessage('Dependency dashboard updated', 3000);
 }
 
@@ -367,6 +406,14 @@ async function handleRepairCommand(): Promise<void> {
   }
 
   const plan = await environmentManager.createRepairPlan();
+  activityTracker.logActivity(
+    'environment-modified' as any,
+    'info' as any,
+    '🔧 Environment Repair Initiated',
+    {
+      description: 'Repair plan generated for project environment'
+    }
+  );
   vscode.window.showInformationMessage(plan, { modal: false });
 }
 
@@ -378,6 +425,10 @@ async function handleCreateEnvironmentCommand(): Promise<void> {
   const summary = await environmentManager.ensureProjectEnvironment();
   if (summary) {
     webviewProvider.displayDashboard(summary);
+    activityTracker.logEnvironmentCreated('Project', {
+      language: summary.languages.join(', '),
+      dependenciesDetected: String(summary.usedPackages.length)
+    });
     vscode.window.showInformationMessage('Project environment setup completed or updated.');
   }
 }
@@ -389,6 +440,10 @@ async function handleCleanupCommand(): Promise<void> {
   if (unused.length === 0) {
     vscode.window.showInformationMessage('No unused dependencies detected.');
     return;
+  }
+
+  for (const dep of unused) {
+    activityTracker.logDependencyRemoved(dep);
   }
 
   vscode.window.showWarningMessage(

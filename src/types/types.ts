@@ -141,3 +141,79 @@ export interface CommandSuggestion {
   explanation: string;
   confidence: number;
 }
+
+/**
+ * Activity types for the sidebar tracker
+ */
+export enum ActivityType {
+  CommandExecuted = 'command',
+  DependencyInstalled = 'dependency-installed',
+  DependencyRemoved = 'dependency-removed',
+  DependencyUpgraded = 'dependency-upgraded',
+  DependencyFailed = 'dependency-failed',
+  EnvironmentCreated = 'environment-created',
+  EnvironmentModified = 'environment-modified',
+  ErrorDetected = 'error-detected',
+  ErrorFixed = 'error-fixed',
+  IssueDetected = 'issue-detected',
+  ScanCompleted = 'scan-completed'
+}
+
+/**
+ * Activity severity levels
+ */
+export enum ActivitySeverity {
+  Info = 'info',
+  Success = 'success',
+  Warning = 'warning',
+  Error = 'error'
+}
+
+/**
+ * Represents a single activity/event
+ */
+export interface Activity {
+  id: string;
+  type: ActivityType;
+  severity: ActivitySeverity;
+  title: string;
+  description?: string;
+  timestamp: number;
+  details?: Record<string, string | number | boolean>;
+  command?: string;
+  packageName?: string;
+}
+
+/**
+ * Project health metrics
+ */
+export interface ProjectHealth {
+  status: 'healthy' | 'warning' | 'critical';
+  dependenciesInstalled: number;
+  unusedDependencies: number;
+  versionConflicts: number;
+  storageUsed: number; // in MB
+  lastScanned: number;
+}
+
+/**
+ * Activity summary for display
+ */
+export interface ActivitySummary {
+  commandsExecuted: number;
+  dependenciesInstalled: number;
+  dependenciesRemoved: number;
+  errorsDetected: number;
+  errorsFixed: number;
+  lastActivity: Activity | null;
+}
+
+/**
+ * Activity timeline view for webview
+ */
+export interface ActivityTimelineView {
+  activities: Activity[];
+  summary: ActivitySummary;
+  projectHealth: ProjectHealth;
+  storageUsed: number;
+}

@@ -38,103 +38,298 @@ This compiles all TypeScript files to JavaScript in the `out/` directory.
 
 ## Running the Extension
 
-### Option 1: Debug Mode (Recommended for Development)
+### Option 1: Debug Mode (Recommended for Development) ⭐
 
+This is the easiest way to test the extension in a separate VS Code window:
+
+**Step 1**: Open the Dependency project folder in VS Code
 ```bash
-# In VS Code:
-Press F5
+code ./Dependency
 ```
 
-This will:
-1. Compile your code
-2. Open a new VS Code window with the extension loaded
-3. Enable debugging with breakpoints
+**Step 2**: Press `F5` (or Ctrl+Shift+D → Click "Run Extension")
 
-### Option 2: Manual Testing
+This will:
+- Compile the TypeScript code automatically
+- Open a new VS Code window with the extension loaded
+- Enable breakpoint debugging
+- Show console output from the extension
+
+**Step 3**: Test the extension in the debug window:
+- Open a Python/JavaScript file
+- Write code with missing imports
+- Watch the extension detect issues
+- Check the "Dependency Activity" panel in the sidebar
+
+**Step 4**: Stop debugging by closing the debug window
+
+### Option 2: Watch Mode (For Continuous Development)
+
+If you want to make changes and test them quickly:
 
 ```bash
-# In a terminal:
 npm run watch
 ```
 
-Then in VS Code:
-- Press `Ctrl+Shift+D` to open Debug view
-- Click "Run Extension" (or press F5)
+Then press F5 to open the debug window. The extension will automatically reload when you save files.
 
-## Testing the Extension
+### Option 3: Package & Install Locally
 
-### Run Tests
+To test the extension in your main VS Code:
 
 ```bash
+npm run esbuild
+# or for production build:
+npm run vscode:prepublish
+```
+
+Then:
+1. Open VS Code Extensions
+2. Click three dots → "Install from VSIX..."
+3. Navigate to `out/extension.js`
+4. Install and test
+
+## Testing the Activity Panel
+
+When you run the extension (F5), you'll see a new sidebar panel:
+
+**In the Debug Window:**
+1. Open the Explorer view (or Activity Bar)
+2. Look for **"Dependency Activity"** panel at the bottom
+3. You should see:
+   - 📊 Summary (commands, dependencies installed, errors fixed, storage used)
+   - 🏥 Project Health (status indicator with metrics)
+   - 📅 Activity Timeline (real-time activity log with timestamps)
+
+**Trigger Activity:**
+- Write code with missing imports → See "Error Detected" activity
+- Watch auto-install happen → See "Dependency Installed" activity
+- See all commands in real-time
+
+## Apply Extension to Your Other Projects
+
+### Method 1: Quick Test (Using Current Build)
+
+```bash
+# In your other project folder:
+cd /path/to/other/project
+
+# Copy the extension files
+cp -r /path/to/Dependency/out .vscode/extension
+
+# Create a symlink (advanced)
+ln -s /path/to/Dependency .vscode/extensions/smart-dependency-assistant
+```
+
+### Method 2: Install via VSIX (Recommended)
+
+**Step 1**: Build the extension as VSIX
+```bash
+cd /path/to/Dependency
+npm run vscode:prepublish
+```
+
+**Step 2**: In VS Code
+- Go to Extensions (Ctrl+Shift+X)
+- Click **View** → **Command Palette** → "Install from VSIX"
+- Select the `.vsix` file created in the `out/` folder
+
+**Step 3**: The extension is now installed globally and works on any project
+
+### Method 3: Clone & Debug Multiple Projects
+
+Create a setup script in each project:
+
+```bash
+#!/bin/bash
+# In each project folder, create .vscode/settings.json
+cat > .vscode/settings.json << 'EOF'
+{
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "javascript.validate.enable": true
+}
+EOF
+
+# Then open debug mode pointing to the main extension:
+code . --extensionDir /path/to/Dependency/out
+```
+
+## Step-by-Step: Running & Testing on New Project
+
+### Example: Test on a Python Project
+
+```bash
+# 1. Create test project
+mkdir test-python-project
+cd test-python-project
+
+# 2. Create test file
+cat > main.py << 'EOF'
+import pandas
+import numpy
+
+df = pandas.DataFrame()
+print(df)
+EOF
+
+# 3. Open in VS Code with the extension
+code . --extensionDir /path/to/Dependency/out
+```
+
+**Expected Result:**
+- Panel shows "Smart Dependency Assistant"
+- "Dependency Activity" shows activity timeline
+- Missing imports detected for pandas and numpy
+- Extension auto-installs or suggests installation
+
+### Example: Test on a Node.js Project
+
+```bash
+# 1. Create test project
+mkdir test-node-project
+cd test-node-project
+npm init -y
+
+# 2. Create test file
+cat > app.js << 'EOF'
+const express = require('express');
+const axios = require('axios');
+
+const app = express();
+app.listen(3000);
+EOF
+
+# 3. Open in VS Code with extension
+code . --extensionDir /path/to/Dependency/out
+```
+
+**Expected Result:**
+- Activity panel shows real-time dependency detection
+- Missing packages (express, axios) are detected
+- Commands appear in activity timeline
+
+## Full Development Loop
+
+### For the Main Dependency Project:
+```bash
+# Terminal 1: Watch for changes
+npm run watch
+
+# Terminal 2: Run tests
+npm test
+
+# Then press F5 in VS Code to debug
+```
+
+### For Testing on Other Projects:
+1. Make changes to extension code
+2. Changes auto-compile (watch mode)
+3. Debug window auto-reloads
+4. Test in debug window immediately
+5. No need to rebuild or reinstall each time
+
+## Verify Everything Works
+
+### Pre-Flight Checklist ✅
+
+Before running the extension, verify:
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Compile TypeScript
+npm run compile
+
+# 3. Run tests (optional but recommended)
 npm test
 ```
 
-### Test a Specific Module
+### First Run Verification
 
-```bash
-npm test -- --grep "ErrorAnalyzer"
-```
+When you press **F5** and the debug window opens:
+
+- [ ] Extension activates (see "✅ Smart Dependency Assistant activated" in console)
+- [ ] "Smart Dependency Assistant" panel appears in Explorer
+- [ ] "Dependency Activity" panel appears below it
+- [ ] Activity panel shows: 📊 Summary, 🏥 Project Health, 📅 Activity Timeline
+- [ ] Initial startup activity logged ("🚀 Smart Dependency Assistant Ready")
+
+### Quick Test in Debug Window
+
+1. **Python Test**:
+   ```python
+   import pandas  # This package doesn't exist
+   ```
+   Expected: Extension detects missing import, shows in Activity panel
+
+2. **JavaScript Test**:
+   ```javascript
+   const express = require('express');  // Missing
+   ```
+   Expected: Extension detects and logs in Activity panel
+
+3. **Check Activity Panel**:
+   - Should show timeline of detected errors
+   - Should show command execution attempts
+   - Should display project health status
 
 ## Development Workflow
 
-### 1. Make Changes
-
-Edit any TypeScript file in `src/`
-
-### 2. Watch for Changes
+### Make Changes & Test Immediately
 
 ```bash
+# Terminal 1: Compile and watch for changes
 npm run watch
+
+# Terminal 2: Run tests continuously
+npm test
+
+# VS Code: Press F5 to start debug mode
+# Changes auto-reload in debug window!
 ```
 
-### 3. Test in Debug Mode
+### Debugging Tips
 
-- Press F5 to open debug window
-- Changes will auto-reload
-- Set breakpoints by clicking line numbers
+- Set breakpoints by clicking line numbers in VS Code editor
+- Open Debug Console (Ctrl+Shift+Y) to see logs
+- Press F10 to step over, F11 to step into
+- View variables in the Variables panel while paused
 
-### 4. View Output
+### View Extension Logs
 
-Open the Debug Console to see:
-```
-✅ Smart Dependency Assistant activated
-✅ All modules initialized
-[Extension] Processing terminal output...
-```
+In the debug window:
+1. Open Output panel (View → Output)
+2. Select "Smart Dependency Assistant" from dropdown
+3. See all console.log() output from the extension
 
-## Quick Test Scenarios
+## Testing on Different Projects
 
-### Test Python Error Detection
+### Quick Multi-Project Testing
 
-1. Press F5 to open debug window
-2. Create a test file `test.py`:
-```python
-import numpy
-```
-
-3. Run it in the terminal:
 ```bash
-python test.py
+# Terminal 1: In Dependency folder, watch for changes
+cd ~/Dependency
+npm run watch
+
+# Terminal 2: Test on another project with debug
+cd ~/MyOtherProject
+code . --extensionDir ~/Dependency/out
 ```
 
-4. You should see:
-   - Notification about missing dependency
-   - Smart Dependency Panel appears
-   - Suggests: `pip install numpy`
+### Share Extension with Team
 
-### Test Node.js Error Detection
+After testing, package it:
 
-1. Create a test `test.js`:
-```javascript
-const express = require('express');
-```
-
-2. Run it:
 ```bash
-node test.js
-```
+# In Dependency folder
+npm run vscode:prepublish
 
-3. You should see the same workflow with `npm install express`
+# Creates: Dependency.vsix (can be shared)
+# Install in another VS Code with:
+# Extensions → Install from VSIX
+```
 
 ## Troubleshooting
 
@@ -142,44 +337,64 @@ node test.js
 
 ```bash
 npm run compile
-# Check the error messages
-# Usually related to tsconfig.json or missing types
+# Check error messages - usually tsconfig.json issues
 ```
 
 ### Extension Not Activating
 
-- Check `Output` panel (View → Output → select "Smart Dependency Assistant")
-- Look for `✅ Smart Dependency Assistant activated` message
-- Verify `activationEvents` in `package.json`
+- Check Output panel for "✅ Smart Dependency Assistant activated"
+- Verify `activationEvents` in `package.json` includes `onStartupFinished`
+- Try pressing Ctrl+Shift+P and running "Developer: Reload Window"
+
+### Activity Panel Not Showing
+
+- Ensure debug window opened successfully (F5)
+- Check that `smartActivityPanel` is in package.json `views.explorer`
+- Clear VS Code cache: `~/.config/Code/Backups`
 
 ### Tests Failing
 
 ```bash
 npm test
-# Shows which test failed
-# Check src/test/suite/*.test.ts for details
+# Shows which test failed with stack trace
+# Check src/test/suite/*.test.ts
 ```
 
-## Common Commands
+## Common Commands Reference
 
 | Command | Purpose |
 |---------|---------|
+| `npm install` | Install dependencies |
 | `npm run compile` | Compile TypeScript → JavaScript |
-| `npm run watch` | Watch files and recompile on changes |
-| `npm run esbuild` | Bundle for production |
-| `npm run lint` | Check code style |
-| `npm test` | Run test suite |
-| `npm run vscode:prepublish` | Build for publishing |
+| `npm run watch` | Auto-compile on file changes |
+| `npm run esbuild` | Bundle for development |
+| `npm run vscode:prepublish` | Build for production/publishing |
+| `npm run lint` | Check code style with ESLint |
+| `npm test` | Run all tests |
+| `npm test -- --grep "Pattern"` | Run specific test |
 
 ## VS Code Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `F5` | Start debugging |
-| `Ctrl+Shift+D` | Debug view |
-| `Ctrl+Shift+Y` | Debug console |
+| `F5` | Start/stop debugging |
+| `Ctrl+Shift+D` | Open Debug panel |
+| `Ctrl+Shift+Y` | Open Debug console (see logs) |
+| `F10` | Step over |
+| `F11` | Step into |
+| `Shift+F11` | Step out |
 | `Ctrl+Shift+P` | Command palette |
-| `Ctrl+` | Terminal |
+| `Ctrl+` ` | Toggle integrated terminal |
+
+## Next Steps
+
+1. ✅ Run `npm install` and `npm run compile`
+2. ✅ Press F5 to open debug window
+3. ✅ Test in the debug window with Python/JavaScript code
+4. ✅ Check "Dependency Activity" panel for real-time updates
+5. ✅ Make changes to code and see them reload automatically
+6. ✅ Test on other projects using VSIX or --extensionDir flag
+7. ✅ Share feedback and iterate!
 | `Ctrl+H` | Find and replace |
 
 ## Project Structure
