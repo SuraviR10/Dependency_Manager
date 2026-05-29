@@ -9,10 +9,10 @@ import { ErrorAnalyzer } from '../analyzer/errorAnalyzer';
 
 export class TerminalMonitor {
   private terminals: Map<vscode.Terminal, string> = new Map(); // terminal -> accumulated output
+  private subscriptions: vscode.Disposable[] = [];
   private errorAnalyzer: ErrorAnalyzer;
   private maxBufferSize = 5000; // Keep last 5000 chars per terminal
   private onErrorDetected: ((output: string) => void) | null = null;
-  private outputListeners: Map<vscode.Terminal, vscode.Disposable> = new Map();
 
   constructor(errorAnalyzer: ErrorAnalyzer) {
     this.errorAnalyzer = errorAnalyzer;
@@ -28,14 +28,14 @@ export class TerminalMonitor {
     }
 
     // Monitor new terminal creation
-    vscode.window.onDidOpenTerminal((terminal) => {
-      this.attachToTerminal(terminal);
-    });
-
-    // Clean up when terminals close
-    vscode.window.onDidCloseTerminal((terminal) => {
-      this.detachFromTerminal(terminal);
-    });
+    this.subscriptions.push(
+      vscode.window.onDidOpenTerminal((terminal) => {
+        this.attachToTerminal(terminal);
+      }),
+      vscode.window.onDidCloseTerminal((terminal) => {
+        this.detachFromTerminal(terminal);
+      })
+    );
 
     console.log('[TerminalMonitor] Started monitoring terminals');
   }
@@ -44,10 +44,10 @@ export class TerminalMonitor {
    * Stop all monitoring
    */
   public stopMonitoring(): void {
-    this.outputListeners.forEach((disposable) => {
+    this.subscriptions.forEach((disposable) => {
       disposable.dispose();
     });
-    this.outputListeners.clear();
+    this.subscriptions = [];
     this.terminals.clear();
     console.log('[TerminalMonitor] Stopped monitoring terminals');
   }
@@ -72,12 +72,6 @@ export class TerminalMonitor {
    * Detach from a terminal
    */
   private detachFromTerminal(terminal: vscode.Terminal): void {
-    const listener = this.outputListeners.get(terminal);
-    if (listener) {
-      listener.dispose();
-      this.outputListeners.delete(terminal);
-    }
-
     this.terminals.delete(terminal);
     console.log(`[TerminalMonitor] Detached from terminal: ${terminal.name}`);
   }

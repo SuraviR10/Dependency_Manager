@@ -78,9 +78,19 @@ export function activate(context: vscode.ExtensionContext) {
   // Start monitoring
   terminalMonitor.startMonitoring();
 
-  // Start initial workspace scan and environment preparation
-  refreshHealthDashboard();
-  void environmentManager.ensureProjectEnvironment();
+  // Schedule initial workspace scan after activation finishes
+  if (settingsManager.healthCheck) {
+    setTimeout(() => {
+      void refreshHealthDashboard();
+    }, 1000);
+  }
+
+  // Only run automatic environment setup if explicitly enabled
+  if (settingsManager.autoCreateEnv) {
+    setTimeout(() => {
+      void environmentManager.ensureProjectEnvironment();
+    }, 5000);
+  }
 
   // Log initial activity
   activityTracker.logActivity(
@@ -117,6 +127,22 @@ async function refreshHealthDashboard(): Promise<void> {
  * Register workspace watchers and reactive listeners.
  */
 function setupWorkspaceListeners(context: vscode.ExtensionContext): void {
+  const ignoredPathPattern = /(?:[\\/](?:node_modules|\.venv|venv|\.git|\.vscode|dist|build|out|__pycache__|\.vscode-test)[\\/])/i;
+
+  const shouldRefreshForDocument = (document: vscode.TextDocument): boolean => {
+    if (document.uri.scheme !== 'file') {
+      return false;
+    }
+
+    const fsPath = document.uri.fsPath;
+    if (ignoredPathPattern.test(fsPath)) {
+      return false;
+    }
+
+    const language = getLanguageFromDocument(document);
+    return !!language && settingsManager.isLanguageSupported(language);
+  };
+
   const refreshHandler = () => {
     if (scanTimeout) {
       clearTimeout(scanTimeout);
@@ -127,12 +153,22 @@ function setupWorkspaceListeners(context: vscode.ExtensionContext): void {
     }, settingsManager?.scanDelayMs || 1200);
   };
 
-  const saveListener = vscode.workspace.onDidSaveTextDocument(refreshHandler);
-  const openListener = vscode.workspace.onDidOpenTextDocument(refreshHandler);
+  const saveListener = vscode.workspace.onDidSaveTextDocument((document) => {
+    if (shouldRefreshForDocument(document)) {
+      refreshHandler();
+    }
+  });
+
+  const openListener = vscode.workspace.onDidOpenTextDocument((document) => {
+    if (shouldRefreshForDocument(document)) {
+      refreshHandler();
+    }
+  });
+
   const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(refreshHandler);
+
   const changeListener = vscode.workspace.onDidChangeTextDocument((event) => {
-    const language = getLanguageFromDocument(event.document);
-    if (!language || !settingsManager.isLanguageSupported(language)) {
+    if (!shouldRefreshForDocument(event.document)) {
       return;
     }
     refreshHandler();
@@ -480,7 +516,10 @@ function setupWebviewHandlers(_context: vscode.ExtensionContext): void {
   // Handle dismiss from webview
   webviewProvider.onDismissIssue((issueId: string) => {
     console.log(`[Extension] Issue dismissed: ${issueId}`);
-    terminalMonitor.clearTerminalBuffer(vscode.window.activeTerminal!);
+    const activeTerminal = vscode.window.activeTerminal;
+    if (activeTerminal) {
+      terminalMonitor.clearTerminalBuffer(activeTerminal);
+    }
   });
 
   // Handle panel actions
@@ -507,6 +546,11 @@ function setupWebviewHandlers(_context: vscode.ExtensionContext): void {
  */
 export function deactivate() {
   console.log('✅ Smart Dependency Assistant deactivated');
+
+  if (scanTimeout) {
+    clearTimeout(scanTimeout);
+    scanTimeout = undefined;
+  }
 
   if (terminalMonitor) {
     terminalMonitor.stopMonitoring();

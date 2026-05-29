@@ -6,7 +6,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as glob from 'glob';
+import { glob } from 'glob';
 import { SupportedLanguage, DependencySummary } from '../types/types';
 import { normalizePackageName, isValidPackageName } from '../utils/helpers';
 import { DependencyParser } from './dependencyParser';
@@ -42,15 +42,7 @@ export class DependencyScanner {
   }
 
   public async scanWorkspace(languages?: SupportedLanguage[]): Promise<DependencyScanResult> {
-    const filePaths = glob.sync(
-      '{**/*.py,**/*.js,**/*.ts,**/*.jsx,**/*.tsx,package.json,requirements.txt,pyproject.toml,Pipfile}',
-      {
-        cwd: this.workspacePath,
-        absolute: true,
-        nodir: true,
-        ignore: this.ignorePatterns,
-      }
-    );
+    const filePaths = await this.findWorkspaceFiles();
 
     const allowedLanguages = languages && languages.length > 0 ? new Set(languages) : null;
     const pythonPackages = new Map<string, Set<string>>();
@@ -117,6 +109,22 @@ export class DependencyScanner {
     };
 
     return result;
+  }
+
+  private async findWorkspaceFiles(): Promise<string[]> {
+    try {
+      const matches = await glob('{**/*.py,**/*.js,**/*.ts,**/*.jsx,**/*.tsx,package.json,requirements.txt,pyproject.toml,Pipfile}', {
+        cwd: this.workspacePath,
+        absolute: true,
+        nodir: true,
+        ignore: this.ignorePatterns,
+      });
+
+      return matches || [];
+    } catch (error) {
+      console.warn('[DependencyScanner] Error while scanning workspace files:', error);
+      return [];
+    }
   }
 
   private async collectImports(

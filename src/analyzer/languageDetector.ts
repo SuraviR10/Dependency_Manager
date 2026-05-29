@@ -80,8 +80,13 @@ export class LanguageDetector {
       return this.cachedResult;
     }
 
-    // Fallback to file extension checking
-    return this.detectByFileExtension();
+    // Fallback to unknown rather than expensive directory traversal.
+    this.cachedResult = {
+      language: SupportedLanguage.Unknown,
+      confidence: 0,
+      detectionMethod: 'config-file',
+    };
+    return this.cachedResult;
   }
 
   /**
