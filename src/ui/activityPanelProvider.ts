@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 import { ActivityTracker } from '../services/activityTracker';
-import { Activity, ActivitySeverity, ActivityType, ActivityTimelineView } from '../types/types';
+import { Activity, ActivitySeverity, ActivityType } from '../types/types';
 
 export class ActivityPanelProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
@@ -42,7 +42,7 @@ export class ActivityPanelProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = this.getHtml();
 
     // Handle messages from webview
-    webviewView.webview.onDidReceiveMessage((message: any) => {
+    webviewView.webview.onDidReceiveMessage((message: unknown) => {
       this.handleWebviewMessage(message);
     });
 
@@ -61,8 +61,10 @@ export class ActivityPanelProvider implements vscode.WebviewViewProvider {
   /**
    * Handle messages from webview
    */
-  private handleWebviewMessage(message: any): void {
-    console.log('[ActivityPanelProvider] Message received:', message);
+  private handleWebviewMessage(message: unknown): void {
+    if (typeof message === 'object' && message !== null) {
+      console.log('[ActivityPanelProvider] Message received:', message);
+    }
   }
 
   /**
@@ -446,6 +448,7 @@ export class ActivityPanelProvider implements vscode.WebviewViewProvider {
    * Escape HTML
    */
   private escapeHtml(text: string): string {
+    /* eslint-disable @typescript-eslint/naming-convention */
     const htmlEscapeMap: Record<string, string> = {
       '&': '&amp;',
       '<': '&lt;',
@@ -453,6 +456,7 @@ export class ActivityPanelProvider implements vscode.WebviewViewProvider {
       '"': '&quot;',
       "'": '&#39;'
     };
+    /* eslint-enable @typescript-eslint/naming-convention */
     return text.replace(/[&<>"']/g, (char) => htmlEscapeMap[char]);
   }
 

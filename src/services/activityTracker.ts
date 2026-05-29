@@ -3,7 +3,6 @@
  * Logs and tracks all commands, dependencies, and environment changes
  */
 
-import * as vscode from 'vscode';
 import { Activity, ActivityType, ActivitySeverity, ActivitySummary, ProjectHealth } from '../types/types';
 
 export class ActivityTracker {

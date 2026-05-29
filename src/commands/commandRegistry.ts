@@ -10,6 +10,7 @@ import { InstallCommandGenerator } from './installCommandGenerator';
 export class CommandRegistry {
   private context: vscode.ExtensionContext;
   private commandGenerator: InstallCommandGenerator;
+  private terminal: vscode.Terminal | null = null;
   private onInstallRequested: ((issue: DependencyIssue) => void) | null = null;
   private onCopyCommand: ((command: string, packageName: string) => void) | null = null;
   private onRefreshRequested: (() => void) | null = null;
@@ -241,26 +242,34 @@ export class CommandRegistry {
    */
   public async executeInTerminal(command: string, showTerminal: boolean = true): Promise<boolean> {
     try {
-      // Get or create terminal
-      let terminal = vscode.window.activeTerminal;
-
-      if (!terminal) {
-        terminal = vscode.window.createTerminal('Smart Dependency Assistant');
-      }
+      const terminal = this.getOrCreateTerminal();
 
       if (showTerminal) {
         terminal.show();
       }
 
-      // Send command to terminal with newline
       terminal.sendText(command, true);
-
       return true;
     } catch (error) {
       console.error('[CommandRegistry] Error executing command:', error);
       vscode.window.showErrorMessage(`Failed to execute command: ${error}`);
       return false;
     }
+  }
+
+  private getOrCreateTerminal(): vscode.Terminal {
+    if (this.terminal && vscode.window.terminals.some((term) => term === this.terminal)) {
+      return this.terminal;
+    }
+
+    const existing = vscode.window.terminals.find((term) => term.name === 'Dependify');
+    if (existing) {
+      this.terminal = existing;
+      return existing;
+    }
+
+    this.terminal = vscode.window.createTerminal('Dependify');
+    return this.terminal;
   }
 
   /**

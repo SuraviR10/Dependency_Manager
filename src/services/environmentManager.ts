@@ -12,6 +12,7 @@ import { SupportedLanguage, DependencySummary, DependencyIssue } from '../types/
 import { InstallCommandGenerator } from '../commands/installCommandGenerator';
 import { DependencyScanner, DependencyScanResult } from '../analyzer/dependencyScanner';
 import { normalizePackageName } from '../utils/helpers';
+import { SettingsManager } from './settingsManager';
 
 const exec = promisify(execCallback);
 
@@ -19,23 +20,32 @@ export class EnvironmentManager {
   private workspacePath: string;
   private commandGenerator: InstallCommandGenerator;
   private context: vscode.ExtensionContext;
+  private settingsManager: SettingsManager;
 
-  constructor(workspacePath: string, commandGenerator: InstallCommandGenerator, context: vscode.ExtensionContext) {
+  constructor(
+    workspacePath: string,
+    commandGenerator: InstallCommandGenerator,
+    context: vscode.ExtensionContext,
+    settingsManager: SettingsManager
+  ) {
     this.workspacePath = workspacePath;
     this.commandGenerator = commandGenerator;
     this.context = context;
+    this.settingsManager = settingsManager;
   }
 
   public async ensureProjectEnvironment(): Promise<DependencySummary | null> {
     const scanner = new DependencyScanner(this.workspacePath);
     const scanResult = await scanner.scanWorkspace();
 
-    if (scanResult.languages.includes(SupportedLanguage.Python)) {
-      await this.ensurePythonEnvironment(scanResult);
-    }
+    if (this.settingsManager.autoCreateEnv) {
+      if (scanResult.languages.includes(SupportedLanguage.Python)) {
+        await this.ensurePythonEnvironment(scanResult);
+      }
 
-    if (scanResult.languages.includes(SupportedLanguage.NodeJS)) {
-      await this.ensureNodeEnvironment(scanResult);
+      if (scanResult.languages.includes(SupportedLanguage.NodeJS)) {
+        await this.ensureNodeEnvironment(scanResult);
+      }
     }
 
     return scanner.createSummary(scanResult);
@@ -94,16 +104,20 @@ export class EnvironmentManager {
     const nodeModulesPath = path.join(this.workspacePath, 'node_modules');
     const packageJsonExists = fs.existsSync(packageJsonPath);
 
-    if (!packageJsonExists) {
+    if (!packageJsonExists && this.settingsManager.autoCreateEnv) {
       await this.createPackageJson(scanResult);
     }
 
-    if (!fs.existsSync(nodeModulesPath)) {
+    if (!fs.existsSync(nodeModulesPath) && this.settingsManager.autoCreateEnv) {
       await this.executeCommand('npm install');
     }
   }
 
   private async generateMinimalRequirements(scanResult: DependencyScanResult): Promise<void> {
+    if (!this.settingsManager.autoCreateEnv) {
+      return;
+    }
+
     const requirementsPath = path.join(this.workspacePath, 'requirements.txt');
     const lines: string[] = [];
 

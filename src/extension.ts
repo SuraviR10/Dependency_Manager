@@ -14,7 +14,9 @@ import { CommandRegistry } from './commands/commandRegistry';
 import { WebviewProvider } from './ui/webviewProvider';
 import { ActivityPanelProvider } from './ui/activityPanelProvider';
 import { NotificationManager } from './ui/notificationManager';
-import { DependencyIssue } from './types/types';
+import { SettingsManager } from './services/settingsManager';
+import { InstallQueue } from './services/installQueue';
+import { DependencyIssue, SupportedLanguage, IssueType, IssueSeverity, ActivityType, ActivitySeverity } from './types/types';
 
 let errorAnalyzer: ErrorAnalyzer;
 let dependencyScanner: DependencyScanner;
@@ -26,6 +28,9 @@ let commandRegistry: CommandRegistry;
 let webviewProvider: WebviewProvider;
 let activityPanelProvider: ActivityPanelProvider;
 let notificationManager: NotificationManager;
+let settingsManager: SettingsManager;
+let installQueue: InstallQueue;
+let scanTimeout: NodeJS.Timeout | undefined;
 
 /**
  * Extension activation
@@ -39,12 +44,14 @@ export function activate(context: vscode.ExtensionContext) {
   errorAnalyzer = new ErrorAnalyzer(workspacePath);
   dependencyScanner = new DependencyScanner(workspacePath);
   commandGenerator = new InstallCommandGenerator();
-  environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context);
+  settingsManager = new SettingsManager(context);
+  environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context, settingsManager);
   activityTracker = new ActivityTracker();
   commandRegistry = new CommandRegistry(context, commandGenerator);
   webviewProvider = new WebviewProvider(context, commandGenerator);
   activityPanelProvider = new ActivityPanelProvider(context, activityTracker);
-  notificationManager = new NotificationManager();
+  notificationManager = new NotificationManager(context);
+  installQueue = new InstallQueue(commandRegistry, commandGenerator, activityTracker, notificationManager, settingsManager);
   terminalMonitor = new TerminalMonitor(errorAnalyzer);
 
   // Register commands
@@ -77,8 +84,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Log initial activity
   activityTracker.logActivity(
-    'scan-completed' as any,
-    'info' as any,
+    ActivityType.ScanCompleted,
+    ActivitySeverity.Info,
     '🚀 Smart Dependency Assistant Ready',
     {
       description: 'Extension initialized and monitoring for dependency issues'
@@ -97,9 +104,10 @@ async function refreshHealthDashboard(): Promise<void> {
   }
 
   try {
-    const scan = await dependencyScanner.scanWorkspace();
+    const scan = await dependencyScanner.scanWorkspace(settingsManager?.supportedLanguages);
     const summary = dependencyScanner.createSummary(scan);
     webviewProvider.displayDashboard(summary);
+    activityTracker.logScanCompleted(scan.scannedFiles, scan.missingPackages.size, scan.pythonPackages.size + scan.nodePackages.size);
   } catch (error) {
     console.error('[Extension] Failed to refresh health dashboard:', error);
   }
@@ -109,19 +117,39 @@ async function refreshHealthDashboard(): Promise<void> {
  * Register workspace watchers and reactive listeners.
  */
 function setupWorkspaceListeners(context: vscode.ExtensionContext): void {
-  const saveListener = vscode.workspace.onDidSaveTextDocument(() => {
-    void refreshHealthDashboard();
+  const refreshHandler = () => {
+    if (scanTimeout) {
+      clearTimeout(scanTimeout);
+      scanTimeout = undefined;
+    }
+    scanTimeout = setTimeout(() => {
+      void refreshHealthDashboard();
+    }, settingsManager?.scanDelayMs || 1200);
+  };
+
+  const saveListener = vscode.workspace.onDidSaveTextDocument(refreshHandler);
+  const openListener = vscode.workspace.onDidOpenTextDocument(refreshHandler);
+  const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(refreshHandler);
+  const changeListener = vscode.workspace.onDidChangeTextDocument((event) => {
+    const language = getLanguageFromDocument(event.document);
+    if (!language || !settingsManager.isLanguageSupported(language)) {
+      return;
+    }
+    refreshHandler();
   });
 
-  const openListener = vscode.workspace.onDidOpenTextDocument(() => {
-    void refreshHealthDashboard();
-  });
+  context.subscriptions.push(saveListener, openListener, workspaceListener, changeListener);
+}
 
-  const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-    void refreshHealthDashboard();
-  });
-
-  context.subscriptions.push(saveListener, openListener, workspaceListener);
+function getLanguageFromDocument(document: vscode.TextDocument): SupportedLanguage | undefined {
+  const text = document.languageId.toLowerCase();
+  if (text === 'python') {
+    return SupportedLanguage.Python;
+  }
+  if (['javascript', 'javascriptreact', 'typescript', 'typescriptreact'].includes(text)) {
+    return SupportedLanguage.NodeJS;
+  }
+  return undefined;
 }
 
 /**
@@ -205,20 +233,9 @@ function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
     }
 
     const packageName = matches[1];
-
     let language = issueLanguageFromDiagnostic(diagnostic);
-    if (!language) {
-      const activeEditor = vscode.window.activeTextEditor;
-      const fileExt = activeEditor?.document.uri.fsPath.split('.').pop();
-      if (fileExt === 'py') {
-        language = 'python';
-      } else if (fileExt === 'js' || fileExt === 'ts' || fileExt === 'jsx' || fileExt === 'tsx') {
-        language = 'nodejs';
-      }
-    }
 
     if (!language) {
-      // Fallback from active editor file extension if available
       const activeEditor = vscode.window.activeTextEditor;
       const fileExt = activeEditor?.document.uri.fsPath.split('.').pop();
       if (fileExt === 'py') {
@@ -232,18 +249,21 @@ function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
       continue;
     }
 
-    const command = language === 'python'
-      ? `pip install ${packageName}`
-      : `npm install ${packageName}`;
+    const issue: DependencyIssue = {
+      id: `${Date.now()}-${packageName}`,
+      type: IssueType.MissingDependency,
+      language: language === 'python' ? SupportedLanguage.Python : SupportedLanguage.NodeJS,
+      packageName,
+      originalError: diagnostic.message,
+      explanation: `The import ${packageName} could not be resolved. This usually means the package is missing from the current environment.`,
+      severity: IssueSeverity.High,
+      confidence: 80,
+      suggestedCommand: language === 'python' ? `pip install ${packageName}` : `npm install ${packageName}`,
+      timestamp: Date.now(),
+    };
 
-    // Log to activity tracker
-    activityTracker.logErrorDetected(
-      'Missing Import',
-      packageName
-    );
-
-    console.log(`[Extension] Auto-installing ${packageName} as ${language}`);
-    commandRegistry.executeInTerminal(command, false);
+    activityTracker.logErrorDetected('Missing Import', packageName);
+    void handleDependencyIssue(issue);
   }
 }
 
@@ -258,40 +278,31 @@ function issueLanguageFromDiagnostic(diagnostic: vscode.Diagnostic): 'python' | 
   return undefined;
 }
 
-/**
- * Automatically install a detected dependency (silent)
- */
-async function autoInstallDependency(issue: DependencyIssue): Promise<void> {
-  // Skip auto-install if running in test environment
-  if (process.env.VSCODE_CWD?.includes('.vscode-test')) {
+async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
+  if (!issue || !issue.packageName) {
     return;
   }
 
-  try {
-    const command = commandGenerator.generateCommand(issue);
+  issue.suggestedCommand = commandGenerator.generateCommand(issue).command;
+  webviewProvider.displayIssue(issue);
+  activityTracker.logErrorDetected('Dependency Issue', issue.packageName);
+  notificationManager.showStatusMessage(`Dependify: Detected ${issue.packageName}`, 4500);
 
-    // Validate command safety
-    if (!commandGenerator.isCommandSafe(command.command)) {
-      return;
-    }
-
-    console.log(`[Extension] Auto-installing ${issue.packageName}`);
-
-    // Log activity
-    activityTracker.logDependencyInstalled(issue.packageName);
-
-    // Execute in terminal silently (don't show terminal)
-    await commandRegistry.executeInTerminal(command.command, false);
-  } catch (error) {
-    // Log failed installation
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    activityTracker.logDependencyFailed(issue.packageName, errorMsg);
-    console.error(`[Extension] Auto-install error for ${issue.packageName}:`, error);
+  if (!settingsManager.shouldAutoInstall()) {
+    notificationManager.showInfo(`Missing dependency detected: ${issue.packageName}. ${issue.suggestedCommand}`);
+    return;
   }
+
+  const canInstall = !settingsManager.shouldConfirmBeforeInstall() || await commandRegistry.showInstallConfirmation(issue);
+  if (!canInstall) {
+    return;
+  }
+
+  installQueue.enqueue(issue, issue.suggestedCommand);
 }
 
 /**
- * Process terminal output and detect issues (auto-install silently)
+ * Process terminal output and detect issues
  */
 async function processTerminalOutput(output: string): Promise<void> {
   if (!output || output.length === 0) {
@@ -303,8 +314,7 @@ async function processTerminalOutput(output: string): Promise<void> {
   if (result.detected && result.issue) {
     const issue = result.issue;
     console.log(`[Extension] Dependency issue detected: ${issue.packageName}`);
-    webviewProvider.displayIssue(issue);
-    await autoInstallDependency(issue);
+    await handleDependencyIssue(issue);
   }
 }
 
@@ -407,8 +417,8 @@ async function handleRepairCommand(): Promise<void> {
 
   const plan = await environmentManager.createRepairPlan();
   activityTracker.logActivity(
-    'environment-modified' as any,
-    'info' as any,
+    ActivityType.EnvironmentModified,
+    ActivitySeverity.Info,
     '🔧 Environment Repair Initiated',
     {
       description: 'Repair plan generated for project environment'

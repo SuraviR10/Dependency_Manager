@@ -41,7 +41,7 @@ export class DependencyScanner {
     this.parser = new DependencyParser(workspacePath);
   }
 
-  public async scanWorkspace(): Promise<DependencyScanResult> {
+  public async scanWorkspace(languages?: SupportedLanguage[]): Promise<DependencyScanResult> {
     const filePaths = glob.sync(
       '{**/*.py,**/*.js,**/*.ts,**/*.jsx,**/*.tsx,package.json,requirements.txt,pyproject.toml,Pipfile}',
       {
@@ -52,10 +52,11 @@ export class DependencyScanner {
       }
     );
 
+    const allowedLanguages = languages && languages.length > 0 ? new Set(languages) : null;
     const pythonPackages = new Map<string, Set<string>>();
     const nodePackages = new Map<string, Set<string>>();
     const declaredPackages = new Map<string, string>();
-    const languages = new Set<SupportedLanguage>();
+    const detectedLanguages = new Set<SupportedLanguage>();
     let scannedFiles = 0;
 
     for (const filePath of filePaths) {
@@ -63,18 +64,27 @@ export class DependencyScanner {
       scannedFiles += 1;
 
       if (extension === '.py') {
-        languages.add(SupportedLanguage.Python);
-        await this.collectImports(filePath, SupportedLanguage.Python, pythonPackages);
+        if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
+          detectedLanguages.add(SupportedLanguage.Python);
+          await this.collectImports(filePath, SupportedLanguage.Python, pythonPackages);
+        }
       } else if (['.js', '.jsx', '.ts', '.tsx'].includes(extension)) {
-        languages.add(SupportedLanguage.NodeJS);
-        await this.collectImports(filePath, SupportedLanguage.NodeJS, nodePackages);
+        if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.NodeJS)) {
+          detectedLanguages.add(SupportedLanguage.NodeJS);
+          await this.collectImports(filePath, SupportedLanguage.NodeJS, nodePackages);
+        }
       } else if (path.basename(filePath).toLowerCase() === 'package.json') {
-        this.mergeDeclaredPackages(this.parser.parseDependencies(SupportedLanguage.NodeJS).direct, declaredPackages);
+        if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.NodeJS)) {
+          this.mergeDeclaredPackages(this.parser.parseDependencies(SupportedLanguage.NodeJS).direct, declaredPackages);
+        }
       } else if (path.basename(filePath).toLowerCase() === 'requirements.txt') {
-        this.mergeDeclaredPackages(this.parser.parseDependencies(SupportedLanguage.Python).direct, declaredPackages);
+        if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
+          this.mergeDeclaredPackages(this.parser.parseDependencies(SupportedLanguage.Python).direct, declaredPackages);
+        }
       } else if (path.basename(filePath).toLowerCase() === 'pyproject.toml' || path.basename(filePath).toLowerCase() === 'pipfile') {
-        // Keep language detection accurate even if we do not parse every config.
-        languages.add(SupportedLanguage.Python);
+        if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
+          detectedLanguages.add(SupportedLanguage.Python);
+        }
       }
     }
 
@@ -95,7 +105,7 @@ export class DependencyScanner {
       }
     }
 
-    const languageList = Array.from(languages);
+    const languageList = Array.from(detectedLanguages);
     const result: DependencyScanResult = {
       languages: languageList.length > 0 ? languageList : [SupportedLanguage.Unknown],
       pythonPackages,

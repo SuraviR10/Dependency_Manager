@@ -1,7 +1,7 @@
 {
-  "name": "smart-dependency-assistant",
-  "displayName": "Smart Dependency Assistant",
-  "description": "Identify and resolve dependency-related issues while coding. Monitor terminal errors, detect dependency problems, and suggest installation commands.",
+  "name": "dependify",
+  "displayName": "Dependify",
+  "description": "Dependify detects missing dependencies while coding and suggests safe install commands for Python and Node.js projects.",
   "version": "0.1.0",
   "publisher": "DependencyAssistant",
   "engines": {
@@ -75,6 +75,72 @@
           "icon": "media/icon.svg"
         }
       ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Dependify Settings",
+      "properties": {
+        "dependify.autoInstall": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically install missing dependencies when detected."
+        },
+        "dependify.confirmBeforeInstall": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ask for confirmation before installing a missing dependency."
+        },
+        "dependify.languages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["python", "javascript", "nodejs"]
+          },
+          "default": ["python", "javascript"],
+          "description": "Languages Dependify should monitor for missing dependencies."
+        },
+        "dependify.autoCreateEnv": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically create and configure environments for supported projects."
+        },
+        "dependify.autoReload": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically reload the workspace after environment setup."
+        },
+        "dependify.notifications": {
+          "type": "string",
+          "enum": ["minimal", "detailed", "silent"],
+          "default": "detailed",
+          "description": "Notification level for Dependify status updates."
+        },
+        "dependify.safeMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Block commands that appear unsafe or invalid."
+        },
+        "dependify.healthCheck": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable periodic dependency health checks and dashboard updates."
+        },
+        "dependify.scanDelayMs": {
+          "type": "number",
+          "default": 1200,
+          "description": "Delay in milliseconds before scanning after editor changes."
+        },
+        "dependify.statusBarEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Dependify status in the VS Code status bar."
+        },
+        "dependify.outputLogsEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Dependify log output in the Dependify Logs output channel."
+        }
+      }
     }
   },
   "scripts": {
