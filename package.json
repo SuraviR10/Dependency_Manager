@@ -8,7 +8,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/dependify"
+    "url": "https://github.com/DependencyAssistant/dependify"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -105,6 +105,89 @@
           "default": true,
           "description": "Ask for confirmation before installing a missing dependency."
         },
+        "dependify.autoCreateEnv": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically create and configure environments for supported projects."
+        },
+        "dependify.autoActivateEnv": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically activate the virtual environment after creation."
+        },
+        "dependify.autoReload": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically reload the workspace after environment setup."
+        },
+        "dependify.autoFixDependencyIssues": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically attempt to fix detected dependency issues."
+        },
+        "dependify.notifications": {
+          "type": "string",
+          "enum": ["minimal", "detailed", "silent"],
+          "default": "detailed",
+          "description": "Notification verbosity level."
+        },
+        "dependify.showSuccessNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications when packages are installed successfully."
+        },
+        "dependify.showWarningNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show warning notifications for dependency issues."
+        },
+        "dependify.showErrorNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show error notifications when operations fail."
+        },
+        "dependify.showCommandExecutionNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a notification each time a command is executed in the terminal."
+        },
+        "dependify.healthCheck": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable dependency health checks and dashboard updates."
+        },
+        "dependify.scanOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan the workspace for dependency issues on startup."
+        },
+        "dependify.scanOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Re-scan when a source file is saved."
+        },
+        "dependify.scanOnOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "Re-scan when a source file is opened."
+        },
+        "dependify.scanDelayMs": {
+          "type": "number",
+          "default": 1200,
+          "minimum": 300,
+          "maximum": 10000,
+          "description": "Debounce delay (ms) before scanning after editor changes."
+        },
+        "dependify.safeMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Block commands that appear unsafe or contain injection characters."
+        },
+        "dependify.verifyPackagesBeforeInstall": {
+          "type": "boolean",
+          "default": true,
+          "description": "Verify package exists in PyPI/npm registry before running install command."
+        },
         "dependify.languages": {
           "type": "array",
           "items": {
@@ -112,40 +195,7 @@
             "enum": ["python", "javascript", "typescript", "nodejs"]
           },
           "default": ["python", "javascript"],
-          "description": "Languages Dependify should monitor for missing dependencies."
-        },
-        "dependify.autoCreateEnv": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically create and configure environments for supported projects."
-        },
-        "dependify.autoReload": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically reload the workspace after environment setup."
-        },
-        "dependify.notifications": {
-          "type": "string",
-          "enum": ["minimal", "detailed", "silent"],
-          "default": "detailed",
-          "description": "Notification level for Dependify status updates."
-        },
-        "dependify.safeMode": {
-          "type": "boolean",
-          "default": true,
-          "description": "Block commands that appear unsafe or invalid."
-        },
-        "dependify.healthCheck": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable periodic dependency health checks and dashboard updates."
-        },
-        "dependify.scanDelayMs": {
-          "type": "number",
-          "default": 1200,
-          "minimum": 300,
-          "maximum": 10000,
-          "description": "Delay in milliseconds before scanning after editor changes."
+          "description": "Languages Dependify should monitor."
         },
         "dependify.statusBarEnabled": {
           "type": "boolean",
@@ -155,7 +205,7 @@
         "dependify.outputLogsEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable Dependify log output in the Dependify Logs output channel."
+          "description": "Enable Dependify log output channel."
         }
       }
     }

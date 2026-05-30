@@ -4,6 +4,7 @@ import { InstallCommandGenerator } from '../commands/installCommandGenerator';
 import { CommandRegistry } from '../commands/commandRegistry';
 import { NotificationManager } from '../ui/notificationManager';
 import { SettingsManager } from './settingsManager';
+import { SafeCommandExecutor } from '../security/safeCommandExecutor';
 import { delay } from '../utils/helpers';
 
 export class InstallQueue {
@@ -12,6 +13,7 @@ export class InstallQueue {
   private notificationManager: NotificationManager;
   private settingsManager: SettingsManager;
   private commandGenerator: InstallCommandGenerator;
+  private executor: SafeCommandExecutor;
   private items: Array<{ issue: DependencyIssue; command: string }> = [];
   private processing = false;
   private attemptedPackages = new Set<string>();
@@ -21,20 +23,29 @@ export class InstallQueue {
     commandGenerator: InstallCommandGenerator,
     activityTracker: ActivityTracker,
     notificationManager: NotificationManager,
-    settingsManager: SettingsManager
+    settingsManager: SettingsManager,
+    executor: SafeCommandExecutor
   ) {
     this.commandRegistry = commandRegistry;
     this.commandGenerator = commandGenerator;
     this.activityTracker = activityTracker;
     this.notificationManager = notificationManager;
     this.settingsManager = settingsManager;
+    this.executor = executor;
   }
 
   public enqueue(issue: DependencyIssue, command: string): void {
     const packageKey = issue.packageName.toLowerCase().trim();
 
-    if (!command || !this.commandGenerator.isCommandSafe(command)) {
-      this.notificationManager.appendLog(`Blocked unsafe install command: ${command}`);
+    const cmdError = this.executor.validateCommand(command);
+    if (cmdError) {
+      this.notificationManager.appendLog(`Blocked unsafe install command: ${command} — ${cmdError}`);
+      return;
+    }
+
+    const nameError = this.executor.validatePackageName(issue.packageName);
+    if (nameError) {
+      this.notificationManager.appendLog(`Blocked invalid package name: ${issue.packageName} — ${nameError}`);
       return;
     }
 
@@ -54,32 +65,26 @@ export class InstallQueue {
     if (this.processing || this.items.length === 0) {
       return;
     }
-
     this.processing = true;
 
     while (this.items.length > 0) {
       const next = this.items.shift();
-      if (!next) {
-        continue;
-      }
+      if (!next) { continue; }
 
       const { issue, command } = next;
       this.notificationManager.showStatusMessage(`Dependify: Installing ${issue.packageName}...`);
       this.notificationManager.appendLog(`Running install command: ${command}`);
 
-      const success = await this.commandRegistry.executeInTerminal(command, true);
+      const success = await this.commandRegistry.executeInTerminal(command, issue.packageName, false);
       if (success) {
         this.activityTracker.logCommand(command, issue.packageName, true);
         this.activityTracker.logDependencyInstalled(issue.packageName);
-        this.notificationManager.appendLog(`Install started for ${issue.packageName}`);
         this.notificationManager.showInstallationStarted(issue.packageName);
       } else {
-        this.activityTracker.logDependencyFailed(issue.packageName, `Failed to run command: ${command}`);
-        this.notificationManager.appendLog(`Failed to start install: ${command}`);
-        this.notificationManager.showInstallationError(issue.packageName, `Unable to start install command`);
+        this.activityTracker.logDependencyFailed(issue.packageName, `Failed to run: ${command}`);
+        this.notificationManager.showInstallationError(issue.packageName, 'Unable to start install command');
       }
 
-      // Wait briefly before starting the next queued install.
       await delay(1000);
     }
 

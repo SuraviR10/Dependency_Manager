@@ -5,33 +5,33 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { exec as execCallback } from 'child_process';
-import { promisify } from 'util';
 import * as vscode from 'vscode';
 import { SupportedLanguage, DependencySummary, DependencyIssue } from '../types/types';
 import { InstallCommandGenerator } from '../commands/installCommandGenerator';
 import { DependencyScanner, DependencyScanResult } from '../analyzer/dependencyScanner';
 import { normalizePackageName } from '../utils/helpers';
 import { SettingsManager } from './settingsManager';
-
-const exec = promisify(execCallback);
+import { SafeCommandExecutor } from '../security/safeCommandExecutor';
 
 export class EnvironmentManager {
   private workspacePath: string;
   private commandGenerator: InstallCommandGenerator;
   private context: vscode.ExtensionContext;
   private settingsManager: SettingsManager;
+  private executor: SafeCommandExecutor;
 
   constructor(
     workspacePath: string,
     commandGenerator: InstallCommandGenerator,
     context: vscode.ExtensionContext,
-    settingsManager: SettingsManager
+    settingsManager: SettingsManager,
+    executor: SafeCommandExecutor
   ) {
     this.workspacePath = workspacePath;
     this.commandGenerator = commandGenerator;
     this.context = context;
     this.settingsManager = settingsManager;
+    this.executor = executor;
   }
 
   public async ensureProjectEnvironment(): Promise<DependencySummary | null> {
@@ -82,6 +82,43 @@ export class EnvironmentManager {
   public async installMissingDependencies(issue: DependencyIssue): Promise<boolean> {
     const command = this.commandGenerator.generateCommand(issue);
     return this.executeCommand(command.command);
+  }
+
+  public async checkAndPromptEnvironment(language: SupportedLanguage): Promise<'exists' | 'create' | 'manual' | 'cancel'> {
+    let exists = false;
+    let message = '';
+    let options: string[] = ['Create Environment', 'Continue Manually', 'Cancel'];
+
+    if (language === SupportedLanguage.Python) {
+      const venvPath = path.join(this.workspacePath, '.venv');
+      const venvPath2 = path.join(this.workspacePath, 'venv');
+      exists = fs.existsSync(venvPath) || fs.existsSync(venvPath2) || !!process.env.VIRTUAL_ENV || !!process.env.CONDA_PREFIX;
+      message = 'No Python Environment Found. Installing globally is not recommended.';
+    } else if (language === SupportedLanguage.NodeJS) {
+      const nodeModulesPath = path.join(this.workspacePath, 'node_modules');
+      exists = fs.existsSync(nodeModulesPath);
+      message = 'No node_modules found. Dependency may not be managed properly.';
+      options = ['npm install', 'Continue Manually', 'Cancel'];
+    } else {
+      return 'exists';
+    }
+
+    if (exists) {
+      return 'exists';
+    }
+
+    const choice = await vscode.window.showWarningMessage(`Dependify: ${message}`, ...options);
+    
+    if (choice === 'Create Environment') {
+      await this.createVirtualEnvironment(path.join(this.workspacePath, '.venv'));
+      return 'create';
+    } else if (choice === 'npm install') {
+      await this.executeCommand('npm install');
+      return 'create';
+    } else if (choice === 'Continue Manually') {
+      return 'manual';
+    }
+    return 'cancel';
   }
 
   private async ensurePythonEnvironment(scanResult: DependencyScanResult): Promise<void> {
@@ -199,8 +236,8 @@ export class EnvironmentManager {
 
   private async executeCommand(command: string): Promise<boolean> {
     try {
-      await exec(command, { cwd: this.workspacePath, windowsHide: true, timeout: 1000 * 60 * 5 });
-      return true;
+      const result = await this.executor.execute(command, 'Environment Setup', false);
+      return result.success;
     } catch (error) {
       console.warn(`[EnvironmentManager] Command failed: ${command}`, error);
       return false;

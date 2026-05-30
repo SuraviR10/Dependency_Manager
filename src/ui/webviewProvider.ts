@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { DependencyIssue, DependencySummary, WebviewMessage, SupportedLanguage } from '../types/types';
 import { InstallCommandGenerator } from '../commands/installCommandGenerator';
+import { ConflictInfo } from '../services/conflictDetector';
 
 export class WebviewProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
@@ -193,76 +194,107 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Display summary dashboard in the webview
    */
-  public displayDashboard(summary: DependencySummary): void {
+  public displayDashboard(summary: DependencySummary, conflicts: ConflictInfo[] = []): void {
     this.currentIssue = null;
     this.installationStatus = 'idle';
     this.errorMessage = null;
-
     if (this.view) {
-      this.view.webview.html = this.getDashboardHtml(summary);
+      this.view.webview.html = this.getDashboardHtml(summary, conflicts);
       this.view.show?.(true);
     }
   }
 
-  private getDashboardHtml(summary: DependencySummary): string {
+  private getDashboardHtml(summary: DependencySummary, conflicts: ConflictInfo[] = []): string {
     const nonce = this.getNonce();
-    const languageList = summary.languages.map(lang => this.getLanguageDisplayName(lang)).join(', ') || 'Unknown';
-    const missingPackages = summary.missingPackages.length > 0
-      ? this.escapeHtml(summary.missingPackages.join(', '))
-      : 'None detected';
-    const unusedPackages = summary.unusedPackages.length > 0
-      ? this.escapeHtml(summary.unusedPackages.join(', '))
-      : 'None detected';
+    const languageList = summary.languages.map(l => this.getLanguageDisplayName(l)).join(', ') || 'Unknown';
+    const score = summary.healthScore;
+    const scoreColor = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+    const scoreLabel = score >= 80 ? 'Healthy' : score >= 50 ? 'Warning' : 'Critical';
 
-    return `
-      <!DOCTYPE html>
+    const missingHtml = summary.missingPackages.length > 0
+      ? summary.missingPackages.map(p => `<span class="pkg-tag missing">${this.escapeHtml(p)}</span>`).join(' ')
+      : '<span class="none-text">None detected ✓</span>';
+
+    const unusedHtml = summary.unusedPackages.length > 0
+      ? summary.unusedPackages.map(p => `<span class="pkg-tag unused">${this.escapeHtml(p)}</span>`).join(' ')
+      : '<span class="none-text">None detected ✓</span>';
+
+    const conflictsHtml = conflicts.length > 0
+      ? conflicts.map(c => `
+          <div class="conflict-item">
+            <div class="conflict-title">⚠️ ${this.escapeHtml(c.packageA)} ${this.escapeHtml(c.versionA)} conflicts with ${this.escapeHtml(c.packageB)}</div>
+            <div class="conflict-detail">${this.escapeHtml(c.explanation)}</div>
+            <div class="conflict-fix">💡 ${this.escapeHtml(c.suggestedFix)}</div>
+          </div>`).join('')
+      : '<span class="none-text">No conflicts detected ✓</span>';
+
+    return `<!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'">
-        <style nonce="${nonce}">${this.getRawStyles()}</style>
+        <style nonce="${nonce}">
+          ${this.getRawStyles()}
+          .health-ring { display:flex; align-items:center; gap:16px; margin-bottom:12px; }
+          .ring-score { font-size:36px; font-weight:700; color:${scoreColor}; }
+          .ring-label { font-size:13px; color:${scoreColor}; font-weight:600; }
+          .ring-sub { font-size:11px; color:var(--vscode-descriptionForeground); }
+          .pkg-tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; margin:2px; }
+          .pkg-tag.missing { background:#ef444422; color:#ef4444; border:1px solid #ef444444; }
+          .pkg-tag.unused { background:#f59e0b22; color:#f59e0b; border:1px solid #f59e0b44; }
+          .none-text { font-size:12px; color:var(--vscode-descriptionForeground); }
+          .conflict-item { padding:8px; background:var(--vscode-editor-background); border-radius:4px; margin-bottom:8px; border-left:3px solid #f59e0b; }
+          .conflict-title { font-size:12px; font-weight:600; margin-bottom:4px; }
+          .conflict-detail { font-size:11px; color:var(--vscode-descriptionForeground); margin-bottom:4px; }
+          .conflict-fix { font-size:11px; color:#10b981; }
+          .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+          .summary-stat { background:var(--vscode-editor-background); border-radius:4px; padding:8px; text-align:center; }
+          .summary-stat-num { font-size:18px; font-weight:700; }
+          .summary-stat-label { font-size:10px; color:var(--vscode-descriptionForeground); }
+          .dashboard-header { margin-bottom:16px; }
+          .dashboard-header h2 { font-size:16px; margin-bottom:4px; }
+        </style>
       </head>
       <body>
         <div class="container">
           <div class="dashboard-header">
-            <div>
-              <h2>Project Health Dashboard</h2>
-              <p class="secondary-text">Scanning ${summary.scannedFiles} file(s) for dependency issues.</p>
+            <h2>📊 Project Health Dashboard</h2>
+            <p class="secondary-text">Scanned ${summary.scannedFiles} file(s) · ${languageList}</p>
+          </div>
+
+          <div class="card">
+            <div class="health-ring">
+              <div>
+                <div class="ring-score">${score}</div>
+                <div class="ring-sub">out of 100</div>
+              </div>
+              <div>
+                <div class="ring-label">${scoreLabel}</div>
+                <div class="ring-sub">${summary.environmentStatus}</div>
+              </div>
             </div>
-            <div class="badge">Health ${summary.healthScore}%</div>
+            <div class="summary-grid">
+              <div class="summary-stat"><div class="summary-stat-num">${summary.declaredPackages.length}</div><div class="summary-stat-label">Declared</div></div>
+              <div class="summary-stat"><div class="summary-stat-num">${summary.usedPackages.length}</div><div class="summary-stat-label">Used</div></div>
+              <div class="summary-stat" style="color:${summary.missingPackages.length > 0 ? '#ef4444' : 'inherit'}"><div class="summary-stat-num">${summary.missingPackages.length}</div><div class="summary-stat-label">Missing</div></div>
+              <div class="summary-stat" style="color:${summary.unusedPackages.length > 0 ? '#f59e0b' : 'inherit'}"><div class="summary-stat-num">${summary.unusedPackages.length}</div><div class="summary-stat-label">Unused</div></div>
+            </div>
           </div>
 
-          <div class="card summary-card">
-            <div class="summary-row"><strong>Languages:</strong> ${languageList}</div>
-            <div class="summary-row"><strong>Declared packages:</strong> ${summary.declaredPackages.length}</div>
-            <div class="summary-row"><strong>Used packages:</strong> ${summary.usedPackages.length}</div>
-            <div class="summary-row"><strong>Missing packages:</strong> ${summary.missingPackages.length}</div>
-            <div class="summary-row"><strong>Unused packages:</strong> ${summary.unusedPackages.length}</div>
-            <div class="summary-row"><strong>Environment:</strong> ${this.escapeHtml(summary.environmentStatus)}</div>
-          </div>
-
-          <div class="card">
-            <h3>Missing packages</h3>
-            <p>${missingPackages}</p>
-          </div>
-
-          <div class="card">
-            <h3>Unused declarations</h3>
-            <p>${unusedPackages}</p>
-          </div>
+          <div class="card"><h3>📦 Missing Packages</h3><div>${missingHtml}</div></div>
+          <div class="card"><h3>🗑 Unused Packages</h3><div>${unusedHtml}</div></div>
+          <div class="card"><h3>⚠️ Conflicts (${conflicts.length})</h3><div>${conflictsHtml}</div></div>
 
           <div class="actions">
-            <button class="btn btn-primary" onclick="refresh()">🔄 Refresh Scan</button>
+            <button class="btn btn-primary" onclick="refresh()">🔄 Refresh</button>
             <button class="btn btn-secondary" onclick="createEnvironment()">⚙️ Create Env</button>
           </div>
-
           <div class="actions">
             <button class="btn btn-secondary" onclick="cleanup()">🧹 Cleanup</button>
             <button class="btn btn-secondary" onclick="repair()">🛠️ Repair</button>
           </div>
         </div>
-
         <script nonce="${nonce}">
           const vscode = acquireVsCodeApi();
           function refresh() { vscode.postMessage({ command: 'refresh' }); }
@@ -271,8 +303,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           function cleanup() { vscode.postMessage({ command: 'cleanup' }); }
         </script>
       </body>
-      </html>
-    `;
+      </html>`;
   }
 
   private getEmptyStateHtml(): string {
