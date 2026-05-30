@@ -289,10 +289,14 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           <div class="actions">
             <button class="btn btn-primary" onclick="refresh()">🔄 Refresh</button>
             <button class="btn btn-secondary" onclick="createEnvironment()">⚙️ Create Env</button>
+            <button id="btn-refresh" class="btn btn-primary">🔄 Refresh</button>
+            <button id="btn-create-env" class="btn btn-secondary">⚙️ Create Env</button>
           </div>
           <div class="actions">
             <button class="btn btn-secondary" onclick="cleanup()">🧹 Cleanup</button>
             <button class="btn btn-secondary" onclick="repair()">🛠️ Repair</button>
+            <button id="btn-cleanup" class="btn btn-secondary">🧹 Cleanup</button>
+            <button id="btn-repair" class="btn btn-secondary">🛠️ Repair</button>
           </div>
         </div>
         <script nonce="${nonce}">
@@ -301,6 +305,10 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           function repair() { vscode.postMessage({ command: 'repair' }); }
           function createEnvironment() { vscode.postMessage({ command: 'createEnvironment' }); }
           function cleanup() { vscode.postMessage({ command: 'cleanup' }); }
+          document.getElementById('btn-refresh').addEventListener('click', () => vscode.postMessage({ command: 'refresh' }));
+          document.getElementById('btn-create-env').addEventListener('click', () => vscode.postMessage({ command: 'createEnvironment' }));
+          document.getElementById('btn-cleanup').addEventListener('click', () => vscode.postMessage({ command: 'cleanup' }));
+          document.getElementById('btn-repair').addEventListener('click', () => vscode.postMessage({ command: 'repair' }));
         </script>
       </body>
       </html>`;
@@ -308,6 +316,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
   private getEmptyStateHtml(): string {
     const nonce = this.getNonce();
+    const iconUri = this.view ? this.view.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'icon.png')) : '';
 
     return `
       <!DOCTYPE html>
@@ -321,6 +330,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
       <body>
         <div class="empty-state">
           <div class="empty-icon">📦</div>
+          <img src="${iconUri}" alt="Dependify Logo" style="width: 100px; height: 100px; margin-bottom: 20px; border-radius: 20%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
           <h2>Smart Dependency Assistant</h2>
           <p>Run your code and this panel will show detected dependency issues.</p>
           <p class="secondary-text">Currently monitoring terminal output for errors...</p>
@@ -367,6 +377,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                 <h2>${issue.packageName}</h2>
               </div>
               <button class="dismiss-btn" onclick="dismiss()" title="Dismiss">✕</button>
+              <button id="btn-dismiss" class="dismiss-btn" title="Dismiss">✕</button>
             </div>
             <p class="issue-type">${this.getIssueTypeLabel(issue.type)}</p>
           </div>
@@ -389,6 +400,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             <div class="command-display">
               <code id="commandText">${this.escapeHtml(command.commandDisplay)}</code>
               <button class="copy-btn" onclick="copyCommand()" title="Copy to clipboard">📋 Copy</button>
+              <button id="btn-copy-top" class="copy-btn" title="Copy to clipboard">📋 Copy</button>
             </div>
           </div>
 
@@ -407,10 +419,12 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           <!-- Action Buttons -->
           <div class="actions">
             <button class="btn btn-primary" onclick="install()">
+            <button id="btn-install" class="btn btn-primary">
               <span>⚙️</span>
               <span>Install Package</span>
             </button>
             <button class="btn btn-secondary" onclick="copyCommand()">
+            <button id="btn-copy-bottom" class="btn btn-secondary">
               <span>📋</span>
               <span>Copy Command</span>
             </button>
@@ -434,6 +448,22 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             btn.innerHTML = '<span>⏳</span><span>Installing...</span>';
             vscode.postMessage({ command: 'install' });
           }
+          document.body.addEventListener('click', event => {
+            const target = event.target;
+            if (target.closest('#btn-install')) {
+              const btn = target.closest('#btn-install');
+              btn.disabled = true;
+              btn.innerHTML = '<span>⏳</span><span>Installing...</span>';
+              vscode.postMessage({ command: 'install' });
+            } else if (target.closest('#btn-copy-top') || target.closest('#btn-copy-bottom')) {
+              const cmdText = document.getElementById('commandText').textContent;
+              vscode.postMessage({ command: 'copyCommand', text: cmdText });
+            } else if (target.closest('#btn-dismiss')) {
+              vscode.postMessage({ command: 'dismiss' });
+            } else if (target.closest('.retry-btn')) {
+              vscode.postMessage({ command: 'retry' });
+            }
+          });
 
           function copyCommand() {
             const cmdText = document.getElementById('commandText').textContent;
@@ -484,6 +514,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             <span class="status-icon">✗</span>
             <span>Installation failed: ${this.escapeHtml(this.errorMessage || 'Unknown error')}</span>
             <button class="retry-btn" onclick="vscode.postMessage({ command: 'retry' })">Retry</button>
+            <button class="retry-btn">Retry</button>
           </div>
         `;
 
@@ -562,7 +593,10 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           padding: 16px;
           background-color: var(--vscode-editor-lineHighlightBackground);
           border-radius: 4px;
+          background: linear-gradient(145deg, var(--vscode-editor-lineHighlightBackground), transparent);
+          border-radius: 8px;
           margin-bottom: 16px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .header-top {
@@ -623,8 +657,11 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           background-color: var(--vscode-editor-lineHighlightBackground);
           padding: 12px;
           border-radius: 4px;
+          padding: 16px;
+          border-radius: 8px;
           margin-bottom: 12px;
           border: 1px solid var(--vscode-editor-lineHighlightBorder);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .card h3 {
@@ -786,6 +823,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           padding: 10px 16px;
           border: none;
           border-radius: 4px;
+          border-radius: 6px;
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
@@ -794,6 +832,13 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           justify-content: center;
           gap: 8px;
           transition: all 0.2s;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         .btn-primary {

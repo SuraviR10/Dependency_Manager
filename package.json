@@ -77,8 +77,17 @@
         { "command": "smartDependencyAssistant.checkTerminal" }
       ]
     },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dependify",
+          "title": "Dependify",
+          "icon": "media/icon.png"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "dependify": [
         {
           "id": "smartDependencyPanel",
           "name": "Smart Dependency Assistant",
