@@ -34,6 +34,10 @@ export function isValidPackageName(name: string): boolean {
   if (!name || name.length === 0) {
     return false;
   }
+  // Block path traversal and absolute paths
+  if (name.includes('..') || name.includes('\\') || name.startsWith('/') || name.startsWith('.')) {
+    return false;
+  }
   // Scoped npm package: @scope/name
   if (name.startsWith('@')) {
     return /^@[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(name);
@@ -72,7 +76,13 @@ export function extractPackageFromError(error: string): string | null {
  * Normalize package name (lowercase, preserve underscores/hyphens as-is)
  */
 export function normalizePackageName(name: string, _language: SupportedLanguage): string {
-  return name.toLowerCase().trim();
+  if (!name) { 
+    return ''; 
+  }
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[_.]+/g, '-');
 }
 
 /**

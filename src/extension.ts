@@ -27,6 +27,8 @@ import {
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as cp from 'child_process';
+import * as util from 'util';
 
 // Module-level singletons
 let errorAnalyzer: ErrorAnalyzer;
@@ -48,6 +50,8 @@ let conflictDetector: ConflictDetector;
 let scanTimeout: NodeJS.Timeout | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
+  console.log("[Dependify] Activation Started");
+
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
 
   // Core services
@@ -55,25 +59,30 @@ export function activate(context: vscode.ExtensionContext): void {
   activityTracker    = new ActivityTracker();
   notificationManager = new NotificationManager(context);
   notificationManager.setNotificationLevel(settingsManager.notificationLevel);
+  console.log("[Dependify] Core Services Initialized");
 
   // Security layer
   executor           = new SafeCommandExecutor(activityTracker);
   packageValidator   = new PackageValidator();
   snapshotManager    = new SnapshotManager(workspacePath);
   conflictDetector   = new ConflictDetector(workspacePath);
+  console.log("[Dependify] Security Layer Initialized");
 
   // Analysis
   errorAnalyzer      = new ErrorAnalyzer(workspacePath);
   dependencyScanner  = new DependencyScanner(workspacePath);
   commandGenerator   = new InstallCommandGenerator();
+  console.log("[Dependify] Scanner Initialized");
 
   // Commands & environment
   commandRegistry    = new CommandRegistry(context, commandGenerator, executor);
   environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context, settingsManager, executor);
+  console.log("[Dependify] Environment Manager Initialized");
 
   // UI
   webviewProvider       = new WebviewProvider(context, commandGenerator);
   activityPanelProvider = new ActivityPanelProvider(context, activityTracker);
+  console.log("[Dependify] Dashboard Ready");
 
   // Install queue (uses executor for safety)
   installQueue = new InstallQueue(
@@ -122,6 +131,8 @@ export function activate(context: vscode.ExtensionContext): void {
     '🚀 Dependify Ready',
     { description: 'Extension initialized and monitoring for dependency issues' }
   );
+
+  console.log("[Dependify] Activation Completed");
 }
 
 // ─── Health Dashboard ─────────────────────────────────────────────────────────
@@ -162,9 +173,10 @@ async function refreshHealthDashboard(): Promise<void> {
  * Calculates actual storage used by dependency folders (node_modules, .venv)
  */
 async function calculateStorageUsage(dirPath: string): Promise<number> {
-  if (!dirPath) return 0;
+  if (!dirPath) { return 0; }
   let totalBytes = 0;
   const targetDirs = ['node_modules', '.venv', 'venv'];
+  const execFileAsync = util.promisify(cp.execFile);
   
   for (const target of targetDirs) {
     try {
@@ -172,11 +184,11 @@ async function calculateStorageUsage(dirPath: string): Promise<number> {
       const stat = await fs.stat(targetPath);
       if (stat.isDirectory()) {
         if (process.platform === 'win32') {
-          const { stdout } = await require('util').promisify(require('child_process').exec)(`(Get-ChildItem "${targetPath}" -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum`, { shell: 'powershell.exe' });
+          const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `(Get-ChildItem '${targetPath}' -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum`], { timeout: 10000 });
           const bytes = parseInt(stdout.trim(), 10);
-          if (!isNaN(bytes)) totalBytes += bytes;
+          if (!isNaN(bytes)) { totalBytes += bytes; }
         } else {
-          const { stdout } = await require('util').promisify(require('child_process').exec)(`du -sm "${targetPath}"`);
+          const { stdout } = await execFileAsync('du', ['-sm', targetPath], { timeout: 10000 });
           totalBytes += parseInt(stdout.toString().split('\t')[0], 10) * 1024 * 1024;
         }
       }
@@ -330,8 +342,12 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
       const messages = [vscode.LanguageModelChatMessage.User(`Explain this dependency error simply to a beginner: ${issue.originalError}`)];
       const chatResponse = await models[0].sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
       let aiText = '';
-      for await (const fragment of chatResponse.text) aiText += fragment;
-      if (aiText) issue.explanation = aiText;
+      for await (const fragment of chatResponse.text) {
+        aiText += fragment;
+      }
+      if (aiText) {
+        issue.explanation = aiText;
+      }
     }
   } catch (e) {
     // Fallback to local regex explanation

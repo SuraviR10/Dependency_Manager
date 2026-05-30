@@ -59,6 +59,10 @@ export class SafeCommandExecutor {
     if (trimmed.length > 214) {
       return `Package name is too long (${trimmed.length} chars).`;
     }
+    // Explicitly block path traversal
+    if (trimmed.includes('..') || trimmed.includes('\\') || trimmed.startsWith('/') || trimmed.startsWith('.')) {
+      return `Package name contains unsafe path characters.`;
+    }
     if (!SAFE_PACKAGE_NAME.test(trimmed)) {
       return `Package name "${trimmed}" contains invalid characters. Only letters, numbers, hyphens, underscores, and dots are allowed.`;
     }
@@ -74,6 +78,9 @@ export class SafeCommandExecutor {
       if (command.includes(char)) {
         return `Command contains unsafe character "${char}". Execution blocked.`;
       }
+    }
+    if (command.includes('..')) {
+      return `Command contains path traversal characters. Execution blocked.`;
     }
     const trimmed = command.trim();
     const allowed = ALLOWED_PREFIXES.some(prefix => trimmed.startsWith(prefix));

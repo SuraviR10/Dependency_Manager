@@ -2,24 +2,36 @@ import * as cp from 'child_process';
 import * as util from 'util';
 import { SupportedLanguage } from '../types/types';
 
-const exec = util.promisify(cp.exec);
+const execFile = util.promisify(cp.execFile);
+
+export interface ConflictInfo {
+  package: string;
+  affectedDependency: string;
+  message: string;
+  language: SupportedLanguage;
+  severity: string;
+  recommendedFix: string;
+  confidenceScore: number;
+}
 
 export class ConflictDetector {
   constructor(private workspacePath: string) {}
 
-  public async detectConflicts(language: SupportedLanguage): Promise<{ conflicts: any[] }> {
-    const conflicts: any[] = [];
+  public async detectConflicts(language: SupportedLanguage): Promise<{ conflicts: ConflictInfo[] }> {
+    const conflicts: ConflictInfo[] = [];
     
     if (language === SupportedLanguage.Python) {
       try {
-        await exec('pip check', { cwd: this.workspacePath });
-      } catch (err: any) {
+        const pipCmd = process.platform === 'win32' ? 'pip.exe' : 'pip';
+        await execFile(pipCmd, ['check'], { cwd: this.workspacePath, timeout: 5000 });
+      } catch (unknownErr: unknown) {
+        const err = unknownErr as { stdout?: string };
         if (err.stdout) {
           const lines = err.stdout.split('\n');
           for (const line of lines) {
             const match = line.match(/^(\S+)\s+.*?\s+has requirement\s+([^,]+(?:,[^,]+)*),\s+but you have\s+(\S+)\s+(.*)\./);
             if (match) {
-              const [_, pkg, requirement, affectedPkg, actualVersion] = match;
+              const [, pkg, requirement, affectedPkg] = match;
               conflicts.push({
                 package: pkg,
                 affectedDependency: affectedPkg,
@@ -45,8 +57,10 @@ export class ConflictDetector {
       }
     } else if (language === SupportedLanguage.NodeJS) {
       try {
-        await exec('npm ls --json', { cwd: this.workspacePath });
-      } catch (err: any) {
+        const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+        await execFile(npmCmd, ['ls', '--json'], { cwd: this.workspacePath, timeout: 5000 });
+      } catch (unknownErr: unknown) {
+        const err = unknownErr as { stdout?: string };
         if (err.stdout) {
           try {
             const data = JSON.parse(err.stdout);

@@ -222,9 +222,9 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     const conflictsHtml = conflicts.length > 0
       ? conflicts.map(c => `
           <div class="conflict-item">
-            <div class="conflict-title">⚠️ ${this.escapeHtml(c.packageA)} ${this.escapeHtml(c.versionA)} conflicts with ${this.escapeHtml(c.packageB)}</div>
-            <div class="conflict-detail">${this.escapeHtml(c.explanation)}</div>
-            <div class="conflict-fix">💡 ${this.escapeHtml(c.suggestedFix)}</div>
+            <div class="conflict-title">⚠️ ${this.escapeHtml(c.package)} conflicts with ${this.escapeHtml(c.affectedDependency)}</div>
+            <div class="conflict-detail">${this.escapeHtml(c.message)}</div>
+            <div class="conflict-fix">💡 ${this.escapeHtml(c.recommendedFix)}</div>
           </div>`).join('')
       : '<span class="none-text">No conflicts detected ✓</span>';
 
