@@ -2,7 +2,7 @@
   "name": "dependify",
   "displayName": "Dependify – Smart Dependency Manager",
   "description": "Automatically detects missing dependencies, creates virtual environments, installs packages, and monitors project health for Python and Node.js projects.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "DependencyAssistant",
   "icon": "media/icon.png",
   "license": "MIT",
@@ -69,12 +69,24 @@
     ],
     "menus": {
       "commandPalette": [
-        { "command": "smartDependencyAssistant.openPanel" },
-        { "command": "smartDependencyAssistant.refreshDependencies" },
-        { "command": "smartDependencyAssistant.createEnvironment" },
-        { "command": "smartDependencyAssistant.cleanupEnvironment" },
-        { "command": "smartDependencyAssistant.repairProject" },
-        { "command": "smartDependencyAssistant.checkTerminal" }
+        {
+          "command": "smartDependencyAssistant.openPanel"
+        },
+        {
+          "command": "smartDependencyAssistant.refreshDependencies"
+        },
+        {
+          "command": "smartDependencyAssistant.createEnvironment"
+        },
+        {
+          "command": "smartDependencyAssistant.cleanupEnvironment"
+        },
+        {
+          "command": "smartDependencyAssistant.repairProject"
+        },
+        {
+          "command": "smartDependencyAssistant.checkTerminal"
+        }
       ]
     },
     "viewsContainers": {
@@ -138,7 +150,11 @@
         },
         "dependify.notifications": {
           "type": "string",
-          "enum": ["minimal", "detailed", "silent"],
+          "enum": [
+            "minimal",
+            "detailed",
+            "silent"
+          ],
           "default": "detailed",
           "description": "Notification verbosity level."
         },
@@ -203,9 +219,17 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["python", "javascript", "typescript", "nodejs"]
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "nodejs"
+            ]
           },
-          "default": ["python", "javascript"],
+          "default": [
+            "python",
+            "javascript"
+          ],
           "description": "Languages Dependify should monitor."
         },
         "dependify.statusBarEnabled": {
