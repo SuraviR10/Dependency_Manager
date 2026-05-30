@@ -10,6 +10,7 @@ interface Snapshot {
   description: string;
   files: Record<string, string>;
   targetPackage?: string;
+  createdEnvPaths?: string[];
 }
 
 export class SnapshotManager {
@@ -17,18 +18,17 @@ export class SnapshotManager {
   
   constructor(private workspacePath: string) {}
 
-  public async capture(description: string, targetPackage?: string): Promise<void> {
-    const snapshot: Snapshot = { id: Date.now().toString(), description, files: {}, targetPackage };
+  public async capture(description: string, targetPackage?: string, createdEnvPaths?: string[]): Promise<void> {
+    const snapshot: Snapshot = { id: Date.now().toString(), description, files: {}, targetPackage, createdEnvPaths };
     
-    try {
-      const pkgPath = path.join(this.workspacePath, 'package.json');
-      snapshot.files['package.json'] = await fs.readFile(pkgPath, 'utf-8');
-    } catch {}
-
-    try {
-      const reqPath = path.join(this.workspacePath, 'requirements.txt');
-      snapshot.files['requirements.txt'] = await fs.readFile(reqPath, 'utf-8');
-    } catch {}
+    const filesToBackup = ['package.json', 'package-lock.json', 'requirements.txt', 'pyproject.toml', 'Pipfile'];
+    
+    for (const file of filesToBackup) {
+      try {
+        const filePath = path.join(this.workspacePath, file);
+        snapshot.files[file] = await fs.readFile(filePath, 'utf-8');
+      } catch {}
+    }
 
     this.snapshots.push(snapshot);
   }
@@ -46,8 +46,19 @@ export class SnapshotManager {
     if (snapshot.targetPackage) {
       try {
         await exec(`npm uninstall ${snapshot.targetPackage}`, { cwd: this.workspacePath });
+      } catch (e) {}
+      try {
         await exec(`pip uninstall -y ${snapshot.targetPackage}`, { cwd: this.workspacePath });
       } catch (e) { /* Ignore if it wasn't installed */ }
+    }
+
+    // 3. Remove partially created environments
+    if (snapshot.createdEnvPaths) {
+      for (const envPath of snapshot.createdEnvPaths) {
+        try {
+          await fs.rm(envPath, { recursive: true, force: true });
+        } catch (e) {}
+      }
     }
   }
 }

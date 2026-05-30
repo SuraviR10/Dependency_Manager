@@ -69,7 +69,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Commands & environment
   commandRegistry    = new CommandRegistry(context, commandGenerator, executor);
-  environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context, settingsManager);
+  environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context, settingsManager, executor);
 
   // UI
   webviewProvider       = new WebviewProvider(context, commandGenerator);
@@ -163,7 +163,7 @@ async function refreshHealthDashboard(): Promise<void> {
  */
 async function calculateStorageUsage(dirPath: string): Promise<number> {
   if (!dirPath) return 0;
-  let totalSize = 0;
+  let totalBytes = 0;
   const targetDirs = ['node_modules', '.venv', 'venv'];
   
   for (const target of targetDirs) {
@@ -171,15 +171,20 @@ async function calculateStorageUsage(dirPath: string): Promise<number> {
       const targetPath = path.join(dirPath, target);
       const stat = await fs.stat(targetPath);
       if (stat.isDirectory()) {
-        // Fast approximation for large directories
-        const { stdout } = await require('child_process').execSync(`du -sm "${targetPath}"`);
-        totalSize += parseInt(stdout.toString().split('\t')[0], 10);
+        if (process.platform === 'win32') {
+          const { stdout } = await require('util').promisify(require('child_process').exec)(`(Get-ChildItem "${targetPath}" -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum`, { shell: 'powershell.exe' });
+          const bytes = parseInt(stdout.trim(), 10);
+          if (!isNaN(bytes)) totalBytes += bytes;
+        } else {
+          const { stdout } = await require('util').promisify(require('child_process').exec)(`du -sm "${targetPath}"`);
+          totalBytes += parseInt(stdout.toString().split('\t')[0], 10) * 1024 * 1024;
+        }
       }
     } catch (e) {
       // Directory doesn't exist or inaccessible
     }
   }
-  return totalSize; // returns size in MB
+  return Math.round(totalBytes / (1024 * 1024)); // returns size in MB
 }
 
 // ─── Workspace Listeners ──────────────────────────────────────────────────────

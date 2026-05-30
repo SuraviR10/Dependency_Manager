@@ -82,11 +82,13 @@
         {
           "id": "smartDependencyPanel",
           "name": "Smart Dependency Assistant",
+          "icon": "media/icon.png",
           "type": "webview"
         },
         {
           "id": "smartActivityPanel",
           "name": "Dependency Activity",
+          "icon": "media/icon.png",
           "type": "webview"
         }
       ]
