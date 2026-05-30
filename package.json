@@ -1,24 +1,32 @@
 {
   "name": "dependify",
-  "displayName": "Dependify",
-  "description": "Dependify detects missing dependencies while coding and suggests safe install commands for Python and Node.js projects.",
+  "displayName": "Dependify – Smart Dependency Manager",
+  "description": "Automatically detects missing dependencies, creates virtual environments, installs packages, and monitors project health for Python and Node.js projects.",
   "version": "0.1.0",
   "publisher": "DependencyAssistant",
+  "icon": "media/icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/dependify"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
     "Programming Languages",
-    "Debuggers",
     "Other"
   ],
   "keywords": [
     "dependency",
-    "error",
-    "module",
-    "package",
+    "package manager",
     "pip",
-    "npm"
+    "npm",
+    "virtual environment",
+    "python",
+    "nodejs",
+    "missing module",
+    "auto install"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -28,51 +36,58 @@
     "commands": [
       {
         "command": "smartDependencyAssistant.openPanel",
-        "title": "Open Smart Dependency Assistant"
+        "title": "Dependify: Open Panel"
       },
       {
         "command": "smartDependencyAssistant.refreshDependencies",
-        "title": "Refresh Dependency Scan"
+        "title": "Dependify: Refresh Dependency Scan"
       },
       {
         "command": "smartDependencyAssistant.createEnvironment",
-        "title": "Create Project Environment"
+        "title": "Dependify: Create Project Environment"
       },
       {
         "command": "smartDependencyAssistant.cleanupEnvironment",
-        "title": "Cleanup Unused Dependencies"
+        "title": "Dependify: Cleanup Unused Dependencies"
       },
       {
         "command": "smartDependencyAssistant.repairProject",
-        "title": "Repair Project Environment"
+        "title": "Dependify: Repair Project Environment"
       },
       {
         "command": "smartDependencyAssistant.installDependency",
-        "title": "Install Dependency"
+        "title": "Dependify: Install Dependency"
       },
       {
         "command": "smartDependencyAssistant.copyCommand",
-        "title": "Copy Install Command"
+        "title": "Dependify: Copy Install Command"
+      },
+      {
+        "command": "smartDependencyAssistant.checkTerminal",
+        "title": "Dependify: Check Terminal Output"
       }
     ],
+    "menus": {
+      "commandPalette": [
+        { "command": "smartDependencyAssistant.openPanel" },
+        { "command": "smartDependencyAssistant.refreshDependencies" },
+        { "command": "smartDependencyAssistant.createEnvironment" },
+        { "command": "smartDependencyAssistant.cleanupEnvironment" },
+        { "command": "smartDependencyAssistant.repairProject" },
+        { "command": "smartDependencyAssistant.checkTerminal" }
+      ]
+    },
     "views": {
       "explorer": [
         {
           "id": "smartDependencyPanel",
-          "name": "Smart Dependency Assistant"
+          "name": "Smart Dependency Assistant",
+          "type": "webview"
         },
         {
           "id": "smartActivityPanel",
-          "name": "Dependency Activity"
-        }
-      ]
-    },
-    "viewsContainers": {
-      "explorer": [
-        {
-          "id": "smartDependencyAssistant",
-          "title": "Smart Dependency",
-          "icon": "media/icon.svg"
+          "name": "Dependency Activity",
+          "type": "webview"
         }
       ]
     },
@@ -94,7 +109,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["python", "javascript", "nodejs"]
+            "enum": ["python", "javascript", "typescript", "nodejs"]
           },
           "default": ["python", "javascript"],
           "description": "Languages Dependify should monitor for missing dependencies."
@@ -128,6 +143,8 @@
         "dependify.scanDelayMs": {
           "type": "number",
           "default": 1200,
+          "minimum": 300,
+          "maximum": 10000,
           "description": "Delay in milliseconds before scanning after editor changes."
         },
         "dependify.statusBarEnabled": {

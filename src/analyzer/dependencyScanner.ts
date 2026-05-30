@@ -51,9 +51,28 @@ export class DependencyScanner {
     const detectedLanguages = new Set<SupportedLanguage>();
     let scannedFiles = 0;
 
+    // Parse declared packages once up-front
+    if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.NodeJS)) {
+      this.mergeDeclaredPackages(this.parser.parseDependencies(SupportedLanguage.NodeJS).direct, declaredPackages);
+    }
+    if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
+      this.mergeDeclaredPackages(this.parser.parseDependencies(SupportedLanguage.Python).direct, declaredPackages);
+    }
+
     for (const filePath of filePaths) {
       const extension = path.extname(filePath).toLowerCase();
+      const basename = path.basename(filePath).toLowerCase();
       scannedFiles += 1;
+
+      // Skip config files — already parsed above
+      if (['package.json', 'requirements.txt', 'pyproject.toml', 'pipfile'].includes(basename)) {
+        if (basename === 'pyproject.toml' || basename === 'pipfile') {
+          if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
+            detectedLanguages.add(SupportedLanguage.Python);
+          }
+        }
+        continue;
+      }
 
       if (extension === '.py') {
         if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
@@ -64,18 +83,6 @@ export class DependencyScanner {
         if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.NodeJS)) {
           detectedLanguages.add(SupportedLanguage.NodeJS);
           await this.collectImports(filePath, SupportedLanguage.NodeJS, nodePackages);
-        }
-      } else if (path.basename(filePath).toLowerCase() === 'package.json') {
-        if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.NodeJS)) {
-          this.mergeDeclaredPackages(this.parser.parseDependencies(SupportedLanguage.NodeJS).direct, declaredPackages);
-        }
-      } else if (path.basename(filePath).toLowerCase() === 'requirements.txt') {
-        if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
-          this.mergeDeclaredPackages(this.parser.parseDependencies(SupportedLanguage.Python).direct, declaredPackages);
-        }
-      } else if (path.basename(filePath).toLowerCase() === 'pyproject.toml' || path.basename(filePath).toLowerCase() === 'pipfile') {
-        if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
-          detectedLanguages.add(SupportedLanguage.Python);
         }
       }
     }

@@ -40,7 +40,6 @@ suite('LanguageDetector Tests', () => {
     const reqPath = path.join(tempDir, 'requirements.txt');
     fs.writeFileSync(reqPath, 'numpy==1.21.0\nrequests>=2.25.0\n');
 
-    detector.clearCache();
     const result = detector.detectLanguage();
 
     assert.strictEqual(result.language, SupportedLanguage.Python);
@@ -51,7 +50,6 @@ suite('LanguageDetector Tests', () => {
     const setupPath = path.join(tempDir, 'setup.py');
     fs.writeFileSync(setupPath, 'from setuptools import setup\n');
 
-    detector.clearCache();
     const result = detector.detectLanguage();
 
     assert.strictEqual(result.language, SupportedLanguage.Python);
@@ -62,13 +60,12 @@ suite('LanguageDetector Tests', () => {
     const pyprojectPath = path.join(tempDir, 'pyproject.toml');
     fs.writeFileSync(pyprojectPath, '[tool.poetry]\n');
 
-    detector.clearCache();
     const result = detector.detectLanguage();
 
     assert.strictEqual(result.language, SupportedLanguage.Python);
   });
 
-  test('Should cache detection results', () => {
+  test('Should return consistent results on repeated calls', () => {
     const packageJson = path.join(tempDir, 'package.json');
     fs.writeFileSync(packageJson, '{}');
 

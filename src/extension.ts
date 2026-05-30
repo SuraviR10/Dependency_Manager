@@ -51,8 +51,14 @@ export function activate(context: vscode.ExtensionContext) {
   webviewProvider = new WebviewProvider(context, commandGenerator);
   activityPanelProvider = new ActivityPanelProvider(context, activityTracker);
   notificationManager = new NotificationManager(context);
+  notificationManager.setNotificationLevel(settingsManager.notificationLevel);
   installQueue = new InstallQueue(commandRegistry, commandGenerator, activityTracker, notificationManager, settingsManager);
   terminalMonitor = new TerminalMonitor(errorAnalyzer);
+
+  // Keep notification level in sync with settings changes
+  settingsManager.onDidChange(() => {
+    notificationManager.setNotificationLevel(settingsManager.notificationLevel);
+  });
 
   // Register commands
   commandRegistry.registerCommands();
@@ -399,7 +405,7 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
     const command = commandGenerator.generateCommand(issue);
 
     // Validate command safety
-      if (!commandGenerator.isCommandSafe(command.command)) {
+    if (!commandGenerator.isCommandSafe(command.command)) {
       throw new Error('Command validation failed');
     }
 
@@ -442,7 +448,6 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
 
 async function handleRefreshCommand(): Promise<void> {
   await refreshHealthDashboard();
-  activityTracker.logScanCompleted(0, 0, 0);
   notificationManager.showStatusMessage('Dependency dashboard updated', 3000);
 }
 
@@ -545,21 +550,14 @@ function setupWebviewHandlers(_context: vscode.ExtensionContext): void {
  * Extension deactivation
  */
 export function deactivate() {
-  console.log('✅ Smart Dependency Assistant deactivated');
-
   if (scanTimeout) {
     clearTimeout(scanTimeout);
     scanTimeout = undefined;
   }
-
   if (terminalMonitor) {
     terminalMonitor.stopMonitoring();
   }
+  if (activityTracker) {
+    activityTracker.dispose();
+  }
 }
-
-/**
- * Set global error handler for uncaught errors
- */
-process.on('uncaughtException', (error) => {
-  console.error('[Extension] Uncaught error:', error);
-});

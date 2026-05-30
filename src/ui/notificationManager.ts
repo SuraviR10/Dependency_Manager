@@ -10,14 +10,18 @@ export class NotificationManager {
   private outputChannel: vscode.OutputChannel;
   private statusBarItem: vscode.StatusBarItem;
   private statusTimer: NodeJS.Timeout | null = null;
+  private notificationLevel: 'minimal' | 'detailed' | 'silent' = 'detailed';
 
   constructor(context: vscode.ExtensionContext) {
     this.outputChannel = vscode.window.createOutputChannel('Dependify Logs');
     this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     this.statusBarItem.text = 'Dependify: Ready';
     this.statusBarItem.show();
-
     context.subscriptions.push(this.outputChannel, this.statusBarItem);
+  }
+
+  public setNotificationLevel(level: 'minimal' | 'detailed' | 'silent'): void {
+    this.notificationLevel = level;
   }
 
   public appendLog(message: string): void {
@@ -34,22 +38,23 @@ export class NotificationManager {
    */
   public showInfo(message: string): Thenable<string | undefined> {
     this.appendLog(`INFO: ${message}`);
+    if (this.notificationLevel === 'silent') {
+      return Promise.resolve(undefined);
+    }
     return vscode.window.showInformationMessage(message);
   }
 
-  /**
-   * Show warning notification
-   */
   public showWarning(message: string): Thenable<string | undefined> {
     this.appendLog(`WARN: ${message}`);
+    if (this.notificationLevel === 'silent') {
+      return Promise.resolve(undefined);
+    }
     return vscode.window.showWarningMessage(message);
   }
 
-  /**
-   * Show error notification
-   */
   public showError(message: string): Thenable<string | undefined> {
     this.appendLog(`ERROR: ${message}`);
+    // Errors always shown regardless of level
     return vscode.window.showErrorMessage(message);
   }
 
@@ -79,11 +84,10 @@ export class NotificationManager {
     return this.showWarning(message);
   }
 
-  /**
-   * Show installation started notification
-   */
-  public showInstallationStarted(packageName: string): Thenable<string | undefined> {
-    return this.showInfo(`Installing ${packageName}...`);
+  public showInstallationStarted(packageName: string): void {
+    // Only log — avoid noisy popups for every queued install
+    this.appendLog(`Installing ${packageName}...`);
+    this.showStatusMessage(`Dependify: Installing ${packageName}...`);
   }
 
   /**

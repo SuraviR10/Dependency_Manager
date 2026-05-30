@@ -28,16 +28,17 @@ export function delay(ms: number): Promise<void> {
 
 /**
  * Validate if a package name is likely valid
- * Basic validation: alphanumeric, hyphens, underscores
+ * Supports plain names and scoped npm packages (@scope/name)
  */
 export function isValidPackageName(name: string): boolean {
   if (!name || name.length === 0) {
     return false;
   }
-  
-  // Allow alphanumeric, hyphens, underscores, dots
-  const packageNameRegex = /^[a-zA-Z0-9_.-]+$/;
-  return packageNameRegex.test(name);
+  // Scoped npm package: @scope/name
+  if (name.startsWith('@')) {
+    return /^@[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(name);
+  }
+  return /^[a-zA-Z0-9_.-]+$/.test(name);
 }
 
 /**
@@ -68,23 +69,10 @@ export function extractPackageFromError(error: string): string | null {
 }
 
 /**
- * Normalize package name (lowercase, handle special cases)
+ * Normalize package name (lowercase, preserve underscores/hyphens as-is)
  */
-export function normalizePackageName(name: string, language: SupportedLanguage): string {
-  let normalized = name.toLowerCase().trim();
-
-  // Handle Python-specific cases
-  if (language === SupportedLanguage.Python) {
-    // Replace underscores with hyphens (Python convention)
-    normalized = normalized.replace(/_/g, '-');
-  }
-
-  // Handle Node.js-specific cases
-  if (language === SupportedLanguage.NodeJS) {
-    // Node packages can contain hyphens, already lowercase
-  }
-
-  return normalized;
+export function normalizePackageName(name: string, _language: SupportedLanguage): string {
+  return name.toLowerCase().trim();
 }
 
 /**

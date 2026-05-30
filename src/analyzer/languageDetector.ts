@@ -10,83 +10,36 @@ import { SupportedLanguage, LanguageDetectionResult } from '../types/types';
 
 export class LanguageDetector {
   private workspacePath: string;
-  private cachedResult: LanguageDetectionResult | null = null;
 
   constructor(workspacePath: string) {
     this.workspacePath = workspacePath;
   }
 
   /**
-   * Detect project language with confidence scoring
+   * Detect project language with confidence scoring.
+   * Prefers Python config files over package.json to avoid misidentifying
+   * Python projects that also have a package.json for tooling.
+   * Result is NOT cached so workspace changes are reflected.
    */
   public detectLanguage(): LanguageDetectionResult {
-    // Return cached result if available
-    if (this.cachedResult !== null) {
-      return this.cachedResult;
+    // Python config files take priority
+    if (this.checkFileExists('requirements.txt')) {
+      return { language: SupportedLanguage.Python, confidence: 95, detectionMethod: 'config-file' };
     }
-
-    // Check for package.json (Node.js)
-    const hasPackageJson = this.checkFileExists('package.json');
-    if (hasPackageJson) {
-      this.cachedResult = {
-        language: SupportedLanguage.NodeJS,
-        confidence: 95,
-        detectionMethod: 'config-file',
-      };
-      return this.cachedResult;
+    if (this.checkFileExists('setup.py')) {
+      return { language: SupportedLanguage.Python, confidence: 90, detectionMethod: 'config-file' };
     }
-
-    // Check for requirements.txt (Python)
-    const hasRequirementsTxt = this.checkFileExists('requirements.txt');
-    if (hasRequirementsTxt) {
-      this.cachedResult = {
-        language: SupportedLanguage.Python,
-        confidence: 95,
-        detectionMethod: 'config-file',
-      };
-      return this.cachedResult;
+    if (this.checkFileExists('pyproject.toml')) {
+      return { language: SupportedLanguage.Python, confidence: 90, detectionMethod: 'config-file' };
     }
-
-    // Check for setup.py (Python)
-    const hasSetupPy = this.checkFileExists('setup.py');
-    if (hasSetupPy) {
-      this.cachedResult = {
-        language: SupportedLanguage.Python,
-        confidence: 90,
-        detectionMethod: 'config-file',
-      };
-      return this.cachedResult;
+    if (this.checkFileExists('Pipfile')) {
+      return { language: SupportedLanguage.Python, confidence: 85, detectionMethod: 'config-file' };
     }
-
-    // Check for pyproject.toml (Python)
-    const hasPyprojectToml = this.checkFileExists('pyproject.toml');
-    if (hasPyprojectToml) {
-      this.cachedResult = {
-        language: SupportedLanguage.Python,
-        confidence: 90,
-        detectionMethod: 'config-file',
-      };
-      return this.cachedResult;
+    // Node.js config file
+    if (this.checkFileExists('package.json')) {
+      return { language: SupportedLanguage.NodeJS, confidence: 95, detectionMethod: 'config-file' };
     }
-
-    // Check for Pipfile (Python with pipenv)
-    const hasPipfile = this.checkFileExists('Pipfile');
-    if (hasPipfile) {
-      this.cachedResult = {
-        language: SupportedLanguage.Python,
-        confidence: 85,
-        detectionMethod: 'config-file',
-      };
-      return this.cachedResult;
-    }
-
-    // Fallback to unknown rather than expensive directory traversal.
-    this.cachedResult = {
-      language: SupportedLanguage.Unknown,
-      confidence: 0,
-      detectionMethod: 'config-file',
-    };
-    return this.cachedResult;
+    return this.detectByFileExtension();
   }
 
   /**
@@ -110,21 +63,11 @@ export class LanguageDetector {
       }
 
       if (pythonCount > nodeCount && pythonCount > 0) {
-        this.cachedResult = {
-          language: SupportedLanguage.Python,
-          confidence: 70,
-          detectionMethod: 'file-extension',
-        };
-        return this.cachedResult;
+        return { language: SupportedLanguage.Python, confidence: 70, detectionMethod: 'file-extension' };
       }
 
       if (nodeCount > pythonCount && nodeCount > 0) {
-        this.cachedResult = {
-          language: SupportedLanguage.NodeJS,
-          confidence: 70,
-          detectionMethod: 'file-extension',
-        };
-        return this.cachedResult;
+        return { language: SupportedLanguage.NodeJS, confidence: 70, detectionMethod: 'file-extension' };
       }
     } catch (error) {
       // Silently fail and return unknown
@@ -203,10 +146,4 @@ export class LanguageDetector {
     return skipDirs.includes(name);
   }
 
-  /**
-   * Clear cached language (useful for testing or when workspace changes)
-   */
-  public clearCache(): void {
-    this.cachedResult = null;
-  }
 }

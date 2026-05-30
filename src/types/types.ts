@@ -1,9 +1,9 @@
-import type * as vscode from 'vscode';
-
 /**
  * Type definitions for Smart Dependency Assistant
  * Defines interfaces for errors, dependencies, and commands
  */
+
+import type { Terminal } from 'vscode';
 
 /**
  * Supported programming languages for dependency detection
@@ -107,7 +107,7 @@ export interface WebviewMessage {
  */
 export interface TerminalOutputEvent {
   text: string;
-  terminal: vscode.Terminal; // VS Code Terminal object
+  terminal: Terminal; // VS Code Terminal object
   timestamp: number;
 }
 

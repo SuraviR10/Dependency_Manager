@@ -135,52 +135,13 @@ export class TerminalMonitor {
 
   /**
    * Alternative approach: Use debug console to capture output
-   * This requires the extension to hook into debug sessions
    */
   public startDebugConsoleMonitoring(): vscode.Disposable {
-    // Listen for debug console output
-    const debugConsoleListener = vscode.debug.onDidReceiveDebugSessionCustomEvent((event) => {
+    return vscode.debug.onDidReceiveDebugSessionCustomEvent((event) => {
       if (event.event === 'output' || event.event === 'stderr' || event.event === 'stdout') {
         const output = event.body?.output || event.body?.text || '';
         this.processOutput(output);
       }
     });
-
-    return debugConsoleListener;
-  }
-
-  /**
-   * Create a pseudo-terminal to intercept output
-   * Advanced feature for more reliable monitoring
-   */
-  public createIntermediateTerminal(_originalTerminal?: vscode.Terminal): vscode.Terminal {
-    const pty: vscode.Pseudoterminal = {
-      onDidWrite: new vscode.EventEmitter<string>().event,
-      onDidClose: new vscode.EventEmitter<void>().event,
-      onDidOverrideDimensions: new vscode.EventEmitter<vscode.TerminalDimensions>().event,
-
-      open: () => {
-        console.log('[TerminalMonitor] Pseudo-terminal opened');
-      },
-
-      close: () => {
-        console.log('[TerminalMonitor] Pseudo-terminal closed');
-      },
-
-      handleInput: (_data: string) => {
-        // Forward input to original terminal or process
-      },
-
-      setDimensions: (_dimensions: vscode.TerminalDimensions) => {
-        // Handle dimension changes
-      },
-    };
-
-    const terminal = vscode.window.createTerminal({
-      name: 'Smart Dependency Assistant',
-      pty,
-    });
-
-    return terminal;
   }
 }

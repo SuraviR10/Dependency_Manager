@@ -1,0 +1,15 @@
+.vscode-test/**
+src/**
+.gitignore
+.eslintrc.json
+tsconfig.json
+package-lock.json
+**/*.map
+**/*.ts
+!out/**
+DEVELOPMENT.md
+QUICKSTART.md
+TESTING_GUIDE.md
+ACTIVITY_PANEL_IMPLEMENTATION.md
+DELIVERABLES.md
+PROJECT_SUMMARY.md

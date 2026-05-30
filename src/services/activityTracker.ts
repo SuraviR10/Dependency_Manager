@@ -7,7 +7,8 @@ import { Activity, ActivityType, ActivitySeverity, ActivitySummary, ProjectHealt
 
 export class ActivityTracker {
   private activities: Activity[] = [];
-  private onActivityChange: ((activity: Activity) => void) | null = null;
+  private onActivityListeners: Array<(activity: Activity) => void> = [];
+  private static readonly maxActivities = 200;
   private projectHealth: ProjectHealth = {
     status: 'healthy',
     dependenciesInstalled: 0,
@@ -48,11 +49,14 @@ export class ActivityTracker {
     };
 
     this.activities.push(activity);
-    console.log(`[ActivityTracker] Activity logged: ${title}`);
+    // Trim to prevent unbounded memory growth
+    if (this.activities.length > ActivityTracker.maxActivities) {
+      this.activities = this.activities.slice(-ActivityTracker.maxActivities);
+    }
 
     // Notify listeners
-    if (this.onActivityChange) {
-      this.onActivityChange(activity);
+    for (const listener of this.onActivityListeners) {
+      listener(activity);
     }
 
     return activity;
@@ -347,10 +351,21 @@ export class ActivityTracker {
   }
 
   /**
-   * Set callback for activity changes
+   * Register a callback for activity changes. Returns a disposable function.
    */
-  public onActivityAdded(callback: (activity: Activity) => void): void {
-    this.onActivityChange = callback;
+  public onActivityAdded(callback: (activity: Activity) => void): () => void {
+    this.onActivityListeners.push(callback);
+    return () => {
+      this.onActivityListeners = this.onActivityListeners.filter(l => l !== callback);
+    };
+  }
+
+  /**
+   * Remove all listeners
+   */
+  public dispose(): void {
+    this.onActivityListeners = [];
+    this.activities = [];
   }
 
   /**

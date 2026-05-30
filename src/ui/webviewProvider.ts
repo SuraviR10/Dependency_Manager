@@ -205,7 +205,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
   }
 
   private getDashboardHtml(summary: DependencySummary): string {
-    const css = this.getStyles();
+    const nonce = this.getNonce();
     const languageList = summary.languages.map(lang => this.getLanguageDisplayName(lang)).join(', ') || 'Unknown';
     const missingPackages = summary.missingPackages.length > 0
       ? this.escapeHtml(summary.missingPackages.join(', '))
@@ -220,7 +220,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        ${css}
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'">
+        <style nonce="${nonce}">${this.getRawStyles()}</style>
       </head>
       <body>
         <div class="container">
@@ -261,23 +262,21 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             <button class="btn btn-secondary" onclick="repair()">🛠️ Repair</button>
           </div>
         </div>
+
+        <script nonce="${nonce}">
+          const vscode = acquireVsCodeApi();
+          function refresh() { vscode.postMessage({ command: 'refresh' }); }
+          function repair() { vscode.postMessage({ command: 'repair' }); }
+          function createEnvironment() { vscode.postMessage({ command: 'createEnvironment' }); }
+          function cleanup() { vscode.postMessage({ command: 'cleanup' }); }
+        </script>
       </body>
-      <script>
-        const vscode = acquireVsCodeApi();
-        function refresh() { vscode.postMessage({ command: 'refresh' }); }
-        function repair() { vscode.postMessage({ command: 'repair' }); }
-        function createEnvironment() { vscode.postMessage({ command: 'createEnvironment' }); }
-        function cleanup() { vscode.postMessage({ command: 'cleanup' }); }
-      </script>
       </html>
     `;
   }
 
-  /**
-   * Generate empty state HTML
-   */
   private getEmptyStateHtml(): string {
-    const css = this.getStyles();
+    const nonce = this.getNonce();
 
     return `
       <!DOCTYPE html>
@@ -285,7 +284,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        ${css}
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'">
+        <style nonce="${nonce}">${this.getRawStyles()}</style>
       </head>
       <body>
         <div class="empty-state">
@@ -294,19 +294,16 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           <p>Run your code and this panel will show detected dependency issues.</p>
           <p class="secondary-text">Currently monitoring terminal output for errors...</p>
         </div>
+        <script nonce="${nonce}">
+          const vscode = acquireVsCodeApi();
+        </script>
       </body>
-      <script>
-        const vscode = acquireVsCodeApi();
-      </script>
       </html>
     `;
   }
 
-  /**
-   * Generate issue display HTML
-   */
   private getIssueHtml(issue: DependencyIssue): string {
-    const css = this.getStyles();
+    const nonce = this.getNonce();
     const command = this.commandGenerator.generateCommand(issue);
     const statusHtml = this.getStatusIndicatorHtml();
     const confidenceBar = this.getConfidenceBarHtml(issue.confidence);
@@ -324,7 +321,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        ${css}
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'">
+        <style nonce="${nonce}">${this.getRawStyles()}</style>
       </head>
       <body>
         <div class="container">
@@ -396,7 +394,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           </div>
         </div>
 
-        <script>
+        <script nonce="${nonce}">
           const vscode = acquireVsCodeApi();
 
           function install() {
@@ -482,12 +480,17 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     `;
   }
 
-  /**
-   * Get styles for webview
-   */
-  private getStyles(): string {
+  private getNonce(): string {
+    let text = '';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+      text += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return text;
+  }
+
+  private getRawStyles(): string {
     return `
-      <style>
         * {
           margin: 0;
           padding: 0;
@@ -808,9 +811,12 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             border-color: #e0e0e0;
           }
         }
-      </style>
     `;
   }
+
+  /** @deprecated - kept for reference only, use getRawStyles() */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private getStyles(): string { return this.getRawStyles(); }
 
   /**
    * Get issue type label

@@ -76,39 +76,104 @@ export class DependencyParser {
   }
 
   /**
-   * Parse Python dependencies from requirements.txt
+   * Parse Python dependencies from requirements.txt, pyproject.toml, or Pipfile
    */
   private parsePythonDependencies(): ParsedDependencies {
     const requirementsPath = path.join(this.workspacePath, 'requirements.txt');
+    if (fs.existsSync(requirementsPath)) {
+      return this.parseRequirementsTxt(requirementsPath);
+    }
+    const pyprojectPath = path.join(this.workspacePath, 'pyproject.toml');
+    if (fs.existsSync(pyprojectPath)) {
+      return this.parsePyprojectToml(pyprojectPath);
+    }
+    const pipfilePath = path.join(this.workspacePath, 'Pipfile');
+    if (fs.existsSync(pipfilePath)) {
+      return this.parsePipfile(pipfilePath);
+    }
+    return { direct: new Map() };
+  }
 
+  private parseRequirementsTxt(filePath: string): ParsedDependencies {
     try {
-      if (!fs.existsSync(requirementsPath)) {
-        return { direct: new Map() };
-      }
-
-      const content = fs.readFileSync(requirementsPath, 'utf-8');
+      const content = fs.readFileSync(filePath, 'utf-8');
       const dependencies = new Map<string, string>();
-
-      const lines = content.split('\n');
-      for (const line of lines) {
-        // Skip comments and empty lines
+      for (const line of content.split('\n')) {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) {
+        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('-')) {
           continue;
         }
-
-        // Parse dependency line (e.g., "numpy==1.21.0" or "requests>=2.25.0")
         const match = trimmed.match(/^([a-zA-Z0-9_.-]+)(.*)/);
         if (match) {
-          const packageName = match[1].toLowerCase();
-          const versionSpec = match[2] || '';
-          dependencies.set(packageName, versionSpec);
+          dependencies.set(match[1].toLowerCase(), match[2] || '');
         }
       }
-
       return { direct: dependencies };
-    } catch (error) {
-      console.error('Error parsing requirements.txt:', error);
+    } catch {
+      return { direct: new Map() };
+    }
+  }
+
+  private parsePyprojectToml(filePath: string): ParsedDependencies {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const dependencies = new Map<string, string>();
+      // Extract from [project] dependencies = [...] or [tool.poetry.dependencies]
+      const depBlockRegex = /\[(?:project|tool\.poetry)\][\s\S]*?dependencies\s*=\s*\[([\s\S]*?)\]/g;
+      let blockMatch: RegExpExecArray | null;
+      while ((blockMatch = depBlockRegex.exec(content)) !== null) {
+        const block = blockMatch[1];
+        const lineRegex = /["']([a-zA-Z0-9_.-]+)[^"']*["']/g;
+        let lineMatch: RegExpExecArray | null;
+        while ((lineMatch = lineRegex.exec(block)) !== null) {
+          dependencies.set(lineMatch[1].toLowerCase(), '*');
+        }
+      }
+      // Also handle [tool.poetry.dependencies] key = "version" style
+      const poetrySection = content.match(/\[tool\.poetry\.dependencies\]([\s\S]*?)(?=\[|$)/);
+      if (poetrySection) {
+        const kvRegex = /^([a-zA-Z0-9_.-]+)\s*=/gm;
+        let kv: RegExpExecArray | null;
+        while ((kv = kvRegex.exec(poetrySection[1])) !== null) {
+          const name = kv[1].toLowerCase();
+          if (name !== 'python') {
+            dependencies.set(name, '*');
+          }
+        }
+      }
+      return { direct: dependencies };
+    } catch {
+      return { direct: new Map() };
+    }
+  }
+
+  private parsePipfile(filePath: string): ParsedDependencies {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const dependencies = new Map<string, string>();
+      let inPackages = false;
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (trimmed === '[packages]' || trimmed === '[dev-packages]') {
+          inPackages = true;
+          continue;
+        }
+        if (trimmed.startsWith('[')) {
+          inPackages = false;
+          continue;
+        }
+        if (inPackages && trimmed && !trimmed.startsWith('#')) {
+          const eqIdx = trimmed.indexOf('=');
+          if (eqIdx > 0) {
+            const pkgName = trimmed.substring(0, eqIdx).trim().toLowerCase();
+            if (pkgName) {
+              dependencies.set(pkgName, trimmed.substring(eqIdx + 1).trim());
+            }
+          }
+        }
+      }
+      return { direct: dependencies };
+    } catch {
       return { direct: new Map() };
     }
   }

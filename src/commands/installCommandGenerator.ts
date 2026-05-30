@@ -115,20 +115,25 @@ export class InstallCommandGenerator {
    * Checks for injection attempts
    */
   public isCommandSafe(command: string): boolean {
-    // Check for dangerous characters that could indicate command injection
-    const dangerousChars = [';', '|', '&', '`', '$', '(', ')', '\\', '\n', '\r'];
-
+    // Reject shell metacharacters that could enable injection
+    const dangerousChars = [';', '|', '&', '`', '$', '\n', '\r'];
     for (const char of dangerousChars) {
       if (command.includes(char)) {
         return false;
       }
     }
 
-    // Check that command starts with allowed package managers
-    const allowedManagers = ['pip', 'pip3', 'npm', 'yarn', 'pnpm', 'conda', 'python', 'python3'];
-    const startsWithAllowed = allowedManagers.some(manager => command.trim().startsWith(manager));
-
-    return startsWithAllowed;
+    // Allow only known package manager prefixes
+    const allowedPrefixes = [
+      'pip install ', 'pip3 install ', 'pip uninstall ',
+      'python -m pip install ', 'python3 -m pip install ',
+      'py -m pip install ',
+      'npm install ', 'npm uninstall ',
+      'yarn add ', 'yarn remove ',
+      'pnpm add ', 'pnpm remove ',
+      'conda install ',
+    ];
+    return allowedPrefixes.some(prefix => command.trim().startsWith(prefix));
   }
 
   /**
