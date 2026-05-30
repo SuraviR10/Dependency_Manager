@@ -99,12 +99,12 @@
       "properties": {
         "dependify.autoInstall": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Automatically install missing dependencies when detected."
         },
         "dependify.confirmBeforeInstall": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Ask for confirmation before installing a missing dependency."
         },
         "dependify.autoCreateEnv": {

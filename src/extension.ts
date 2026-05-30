@@ -275,19 +275,32 @@ function setupTerminalListener(context: vscode.ExtensionContext): void {
 
 // ─── Diagnostics ─────────────────────────────────────────────────────────────
 
+const recentlyProcessedDiagnostics = new Set<string>();
+
 function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
   for (const diag of diagnostics) {
     const msg = diag.message.toLowerCase();
-    const isMissingImport =
+
+    // Explicitly check for Pylance diagnostic codes
+    let isPylanceMissing = false;
+    if (diag.source === 'Pylance' && diag.code) {
+      const codeValue = typeof diag.code === 'object' ? diag.code.value : diag.code;
+      if (codeValue === 'reportMissingImports' || codeValue === 'reportMissingModuleSource') {
+        isPylanceMissing = true;
+      }
+    }
+
+    const isMissingImport = isPylanceMissing || (
       msg.includes('import') &&
-      (msg.includes('could not be resolved') || msg.includes('no module') || msg.includes('cannot find'));
+      (msg.includes('could not be resolved') || msg.includes('no module') || msg.includes('cannot find'))
+    );
 
     if (!isMissingImport) { continue; }
 
     const match = diag.message.match(/["']([a-zA-Z0-9_.-]+)['"]/);
     if (!match?.[1]) { continue; }
 
-    const packageName = match[1];
+    let packageName = match[1];
     let lang = issueLanguageFromDiagnostic(diag);
     if (!lang) {
       const ext = vscode.window.activeTextEditor?.document.uri.fsPath.split('.').pop();
@@ -295,6 +308,27 @@ function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
       else if (['js', 'ts', 'jsx', 'tsx'].includes(ext ?? '')) { lang = 'nodejs'; }
     }
     if (!lang) { continue; }
+
+    // Map common import names to correct PyPI package names
+    if (lang === 'python') {
+      const packageMap: Record<string, string> = {
+        'cv2': 'opencv-python',
+        'sklearn': 'scikit-learn',
+        'bs4': 'beautifulsoup4',
+        'PIL': 'Pillow',
+        'yaml': 'PyYAML',
+        'dotenv': 'python-dotenv'
+      };
+      if (packageMap[packageName]) {
+        packageName = packageMap[packageName];
+      }
+    }
+
+    // Prevent rapid notification spam for the same package
+    const issueKey = `${lang}:${packageName}`;
+    if (recentlyProcessedDiagnostics.has(issueKey)) { continue; }
+    recentlyProcessedDiagnostics.add(issueKey);
+    setTimeout(() => recentlyProcessedDiagnostics.delete(issueKey), 30000);
 
     const issue: DependencyIssue = {
       id: `${Date.now()}-${packageName}`,
