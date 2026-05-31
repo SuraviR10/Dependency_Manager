@@ -2,7 +2,7 @@
   "name": "dependify",
   "displayName": "Dependify – Smart Dependency Manager",
   "description": "Automatically detects missing dependencies, creates virtual environments, installs packages, and monitors project health for Python and Node.js projects.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "DependencyAssistant",
   "icon": "media/icon.png",
   "license": "MIT",
