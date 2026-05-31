@@ -50,7 +50,7 @@ let conflictDetector: ConflictDetector;
 let scanTimeout: NodeJS.Timeout | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
-  console.log("[Dependify] Activation Started");
+  console.log("[📦 Dependify] Activation Started");
 
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
 
@@ -59,30 +59,30 @@ export function activate(context: vscode.ExtensionContext): void {
   activityTracker    = new ActivityTracker();
   notificationManager = new NotificationManager(context);
   notificationManager.setNotificationLevel(settingsManager.notificationLevel);
-  console.log("[Dependify] Core Services Initialized");
+  console.log("[📦 Dependify] Core Services Initialized");
 
   // Security layer
   executor           = new SafeCommandExecutor(activityTracker);
   packageValidator   = new PackageValidator();
   snapshotManager    = new SnapshotManager(workspacePath);
   conflictDetector   = new ConflictDetector(workspacePath);
-  console.log("[Dependify] Security Layer Initialized");
+  console.log("[📦 Dependify] Security Layer Initialized");
 
   // Analysis
   errorAnalyzer      = new ErrorAnalyzer(workspacePath);
   dependencyScanner  = new DependencyScanner(workspacePath);
   commandGenerator   = new InstallCommandGenerator();
-  console.log("[Dependify] Scanner Initialized");
+  console.log("[📦 Dependify] Scanner Initialized");
 
   // Commands & environment
   commandRegistry    = new CommandRegistry(context, commandGenerator, executor);
   environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context, settingsManager, executor);
-  console.log("[Dependify] Environment Manager Initialized");
+  console.log("[📦 Dependify] Environment Manager Initialized");
 
   // UI
   webviewProvider       = new WebviewProvider(context, commandGenerator);
   activityPanelProvider = new ActivityPanelProvider(context, activityTracker);
-  console.log("[Dependify] Dashboard Ready");
+  console.log("[📦 Dependify] Dashboard Ready");
 
   // Install queue (uses executor for safety)
   installQueue = new InstallQueue(
@@ -128,11 +128,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
   activityTracker.logActivity(
     ActivityType.ScanCompleted, ActivitySeverity.Info,
-    '🚀 Dependify Ready',
+    '📦🚀 Dependify Ready',
     { description: 'Extension initialized and monitoring for dependency issues' }
   );
 
-  console.log("[Dependify] Activation Completed");
+  console.log("[📦 Dependify] Activation Completed");
 }
 
 // ─── Health Dashboard ─────────────────────────────────────────────────────────
@@ -367,7 +367,15 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
     return;
   }
 
-  issue.suggestedCommand = commandGenerator.generateCommand(issue).command;
+  let generatedCmd = commandGenerator.generateCommand(issue).command;
+  // Ensure virtual environment is activated before installing Python packages
+  if (issue.language === SupportedLanguage.Python) {
+    const isWindows = process.platform === 'win32';
+    const activateCmd = isWindows ? '.\\.venv\\Scripts\\activate' : 'source .venv/bin/activate';
+    const separator = isWindows ? ' ; ' : ' && ';
+    generatedCmd = `${activateCmd}${separator}${generatedCmd}`;
+  }
+  issue.suggestedCommand = generatedCmd;
 
   // Hybrid AI Explanation integration
   try {
@@ -389,7 +397,7 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
 
   webviewProvider.displayIssue(issue);
   activityTracker.logErrorDetected('Dependency Issue', issue.packageName);
-  notificationManager.showStatusMessage(`Dependify: Detected missing package "${issue.packageName}"`, 4500);
+  notificationManager.showStatusMessage(`📦 Dependify: Detected missing package "${issue.packageName}"`, 4500);
 
   if (!settingsManager.shouldAutoInstall()) {
     notificationManager.showInfo(
@@ -403,7 +411,7 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
     const validation = await packageValidator.verify(issue.packageName, issue.language);
     if (!validation.exists) {
       void vscode.window.showWarningMessage(
-        `Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
+        `📦 Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
       );
       return;
     }
@@ -453,7 +461,14 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
       return;
     }
 
-    const command = commandGenerator.generateCommand(issue);
+    let commandToExecute = issue.suggestedCommand;
+    if (!commandToExecute) {
+      commandToExecute = commandGenerator.generateCommand(issue).command;
+      if (issue.language === SupportedLanguage.Python && !commandToExecute.includes('activate')) {
+        const isWindows = process.platform === 'win32';
+        commandToExecute = isWindows ? `.\\.venv\\Scripts\\activate ; ${commandToExecute}` : `source .venv/bin/activate && ${commandToExecute}`;
+      }
+    }
 
     // Pre-install registry verification
     if (settingsManager.verifyPackagesBeforeInstall) {
@@ -461,7 +476,7 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
       if (!validation.exists) {
         webviewProvider.updateInstallationStatus('error', `Package "${issue.packageName}" not found in registry`);
         void vscode.window.showWarningMessage(
-          `Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
+          `📦 Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
         );
         return;
       }
@@ -470,13 +485,13 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
     // Snapshot before mutating
     await snapshotManager.capture(`Before install ${issue.packageName}`);
 
-    const success = await commandRegistry.executeInTerminal(command.command, issue.packageName, false);
+    const success = await commandRegistry.executeInTerminal(commandToExecute, issue.packageName, false);
 
     if (success) {
       webviewProvider.updateInstallationStatus('success');
       notificationManager.showInstallationSuccess(issue.packageName);
       activityTracker.logDependencyInstalled(issue.packageName);
-      activityTracker.logCommand(command.command, issue.packageName, true);
+      activityTracker.logCommand(commandToExecute, issue.packageName, true);
 
       const response = await notificationManager.showWithActions(
         `✓ "${issue.packageName}" installation started. Check the terminal for progress.`,

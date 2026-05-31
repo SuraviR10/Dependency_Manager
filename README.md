@@ -1,4 +1,8 @@
-# Smart Dependency Assistant
+<p align="center">
+  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+</p>
+
+# Dependify (Smart Dependency Assistant)
 
 A production-ready VS Code extension that helps developers quickly identify and resolve dependency-related issues while coding.
 
@@ -276,4 +280,4 @@ MIT © 2024
 
 ---
 
-**Happy coding! Let Smart Dependency Assistant handle your dependency issues!** 🚀
+**Happy coding! Let Dependify handle your dependency issues!** 📦🚀

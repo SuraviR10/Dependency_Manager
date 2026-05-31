@@ -1,6 +1,10 @@
-# Smart Dependency Assistant — Development Guide
+<p align="center">
+  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+</p>
 
-A comprehensive guide to understanding, modifying, and extending the Smart Dependency Assistant extension.
+# Dependify — Development Guide
+
+A comprehensive guide to understanding, modifying, and extending the Dependify extension.
 
 ## Table of Contents
 

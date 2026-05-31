@@ -1,8 +1,12 @@
-# Smart Dependency Assistant — Project Summary
+<p align="center">
+  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+</p>
+
+# Dependify — Project Summary
 
 ## ✅ Project Complete
 
-The **Smart Dependency Assistant** VS Code extension has been successfully scaffolded with a complete, production-ready codebase.
+The **Dependify** VS Code extension has been successfully scaffolded with a complete, production-ready codebase.
 
 ---
 
