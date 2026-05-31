@@ -45,6 +45,7 @@ const ALLOWED_PREFIXES: readonly string[] = [
 export class SafeCommandExecutor {
   private activityTracker: ActivityTracker;
   private terminal: vscode.Terminal | null = null;
+  private terminalInitPromise: Promise<void> | null = null;
 
   constructor(activityTracker: ActivityTracker) {
     this.activityTracker = activityTracker;
@@ -180,6 +181,7 @@ export class SafeCommandExecutor {
       return existing;
     }
     this.terminal = vscode.window.createTerminal({ name: 'Dependify', hideFromUser: false });
+    this.terminalInitPromise = new Promise(resolve => setTimeout(resolve, 2000));
     return this.terminal;
   }
 

@@ -368,13 +368,6 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
   }
 
   let generatedCmd = commandGenerator.generateCommand(issue).command;
-  // Ensure virtual environment is activated before installing Python packages
-  if (issue.language === SupportedLanguage.Python) {
-    const isWindows = process.platform === 'win32';
-    const activateCmd = isWindows ? '.\\.venv\\Scripts\\activate' : 'source .venv/bin/activate';
-    const separator = isWindows ? ' ; ' : ' && ';
-    generatedCmd = `${activateCmd}${separator}${generatedCmd}`;
-  }
   issue.suggestedCommand = generatedCmd;
 
   // Hybrid AI Explanation integration
@@ -464,10 +457,6 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
     let commandToExecute = issue.suggestedCommand;
     if (!commandToExecute) {
       commandToExecute = commandGenerator.generateCommand(issue).command;
-      if (issue.language === SupportedLanguage.Python && !commandToExecute.includes('activate')) {
-        const isWindows = process.platform === 'win32';
-        commandToExecute = isWindows ? `.\\.venv\\Scripts\\activate ; ${commandToExecute}` : `source .venv/bin/activate && ${commandToExecute}`;
-      }
     }
 
     // Pre-install registry verification
