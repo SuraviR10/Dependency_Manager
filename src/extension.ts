@@ -301,6 +301,11 @@ function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
     if (!match?.[1]) { continue; }
 
     let packageName = match[1];
+
+    // Filter out incomplete/single-character package names to prevent false positives while typing
+    // Only process package names with at least 2 characters and that don't look like partial input
+    if (packageName.length < 2 || /^[a-z]$/.test(packageName)) { continue; }
+
     let lang = issueLanguageFromDiagnostic(diag);
     if (!lang) {
       const ext = vscode.window.activeTextEditor?.document.uri.fsPath.split('.').pop();

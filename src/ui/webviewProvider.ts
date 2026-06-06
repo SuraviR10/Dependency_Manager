@@ -65,8 +65,9 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     if (this.view) {
       this.view.webview.html = this.getIssueHtml(issue);
 
-      // Reveal the view
-      this.view.show?.(true);
+      // NOTE: Do not auto-show the view to avoid disrupting user's workflow.
+      // Users can click the Dependify panel button to view issues.
+      // this.view.show?.(true);
     }
 
     console.log(`[WebviewProvider] Displaying issue: ${issue.packageName}`);
