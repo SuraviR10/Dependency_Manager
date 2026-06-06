@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+  <img src="media/icon.png" alt="DART Logo" width="128"/>
 </p>
 
-# Dependify — Development Guide
+# DART — Development Guide
 
-A comprehensive guide to understanding, modifying, and extending the Dependify extension.
+A comprehensive guide to understanding, modifying, and extending the DART extension.
 
 ## Table of Contents
 
@@ -217,9 +217,9 @@ Alternatives:
 **Responsibility**: Register and manage VS Code commands
 
 **Commands Registered**:
-- `smartDependencyAssistant.openPanel` - Open the issue panel
-- `smartDependencyAssistant.installDependency` - Install a package
-- `smartDependencyAssistant.copyCommand` - Copy command to clipboard
+- `dart.openPanel` - Open the issue panel
+- `dart.installDependency` - Install a package
+- `dart.copyCommand` - Copy command to clipboard
 
 **Execution Methods**:
 - `executeInTerminal()` - Sends command to active terminal

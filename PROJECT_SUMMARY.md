@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+  <img src="media/icon.png" alt="DART Logo" width="128"/>
 </p>
 
-# Dependify — Project Summary
+# DART — Project Summary
 
 ## ✅ Project Complete
 
-The **Dependify** VS Code extension has been successfully scaffolded with a complete, production-ready codebase.
+The **DART** VS Code extension has been successfully scaffolded with a complete, production-ready codebase.
 
 ---
 

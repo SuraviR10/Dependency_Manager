@@ -335,10 +335,15 @@ export class ActivityPanelProvider implements vscode.WebviewViewProvider {
       [ActivityType.DependencyFailed]: '❌',
       [ActivityType.EnvironmentCreated]: '🔧',
       [ActivityType.EnvironmentModified]: '⚙️',
+      [ActivityType.EnvironmentChecked]: '🔍',
+      [ActivityType.EnvironmentExported]: '📸',
       [ActivityType.ErrorDetected]: '⚠️',
       [ActivityType.ErrorFixed]: '✔️',
       [ActivityType.IssueDetected]: '🔍',
       [ActivityType.ScanCompleted]: '📊',
+      [ActivityType.ProjectSetup]: '🚀',
+      [ActivityType.DependenciesSynced]: '🔄',
+      [ActivityType.DashboardViewed]: '📊',
     };
     return icons[type] || '•';
   }

@@ -153,10 +153,15 @@ export enum ActivityType {
   DependencyFailed = 'dependency-failed',
   EnvironmentCreated = 'environment-created',
   EnvironmentModified = 'environment-modified',
+  EnvironmentChecked = 'environment-checked',
+  EnvironmentExported = 'environment-exported',
   ErrorDetected = 'error-detected',
   ErrorFixed = 'error-fixed',
   IssueDetected = 'issue-detected',
-  ScanCompleted = 'scan-completed'
+  ScanCompleted = 'scan-completed',
+  ProjectSetup = 'project-setup',
+  DependenciesSynced = 'dependencies-synced',
+  DashboardViewed = 'dashboard-viewed'
 }
 
 /**

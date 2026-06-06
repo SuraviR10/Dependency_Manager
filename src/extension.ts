@@ -20,6 +20,13 @@ import { SafeCommandExecutor } from './security/safeCommandExecutor';
 import { PackageValidator } from './security/packageValidator';
 import { SnapshotManager } from './services/snapshot/snapshotManager';
 import { ConflictDetector } from './services/conflictDetector';
+import { EnvironmentDoctor } from './services/environmentDoctor';
+import { ProjectSetupWizard } from './services/projectSetupWizard';
+import { DependencySync } from './services/dependencySync';
+import { PackageRecommender } from './services/packageRecommender';
+import { TeamEnvironmentSharing } from './services/teamEnvironmentSharing';
+import { EnhancedConflictResolver } from './services/enhancedConflictResolver';
+import { WorkspaceDashboard } from './services/workspaceDashboard';
 import {
   DependencyIssue, SupportedLanguage, IssueType, IssueSeverity,
   ActivityType, ActivitySeverity,
@@ -47,6 +54,13 @@ let executor: SafeCommandExecutor;
 let packageValidator: PackageValidator;
 let snapshotManager: SnapshotManager;
 let conflictDetector: ConflictDetector;
+let environmentDoctor: EnvironmentDoctor;
+let projectSetupWizard: ProjectSetupWizard;
+let dependencySync: DependencySync;
+let packageRecommender: PackageRecommender;
+let teamEnvironmentSharing: TeamEnvironmentSharing;
+let enhancedConflictResolver: EnhancedConflictResolver;
+let workspaceDashboard: WorkspaceDashboard;
 let scanTimeout: NodeJS.Timeout | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -73,6 +87,16 @@ export function activate(context: vscode.ExtensionContext): void {
   dependencyScanner  = new DependencyScanner(workspacePath);
   commandGenerator   = new InstallCommandGenerator();
   console.log("[📦 Dependify] Scanner Initialized");
+
+  // New Feature Services
+  environmentDoctor  = new EnvironmentDoctor(workspacePath);
+  projectSetupWizard = new ProjectSetupWizard(workspacePath, environmentManager, dependencyScanner);
+  dependencySync     = new DependencySync(workspacePath);
+  packageRecommender = new PackageRecommender();
+  teamEnvironmentSharing = new TeamEnvironmentSharing(workspacePath);
+  enhancedConflictResolver = new EnhancedConflictResolver(workspacePath);
+  workspaceDashboard = new WorkspaceDashboard(workspacePath, dependencyScanner);
+  console.log("[📦 Dependify] Feature Services Initialized");
 
   // Commands & environment
   commandRegistry    = new CommandRegistry(context, commandGenerator, executor);
@@ -446,6 +470,25 @@ function setupCommandHandlers(_context: vscode.ExtensionContext): void {
   commandRegistry.onRepair(async () => { await handleRepairCommand(); });
   commandRegistry.onCreateEnvironment(async () => { await handleCreateEnvironmentCommand(); });
   commandRegistry.onCleanup(async () => { await handleCleanupCommand(); });
+
+  // New Feature Commands
+  _context.subscriptions.push(
+    vscode.commands.registerCommand('smartDependencyAssistant.runEnvironmentDoctor', async () => {
+      await handleEnvironmentDoctorCommand();
+    }),
+    vscode.commands.registerCommand('smartDependencyAssistant.setupProject', async () => {
+      await handleProjectSetupCommand();
+    }),
+    vscode.commands.registerCommand('smartDependencyAssistant.syncDependencies', async () => {
+      await handleDependencySyncCommand();
+    }),
+    vscode.commands.registerCommand('smartDependencyAssistant.exportEnvironment', async () => {
+      await handleExportEnvironmentCommand();
+    }),
+    vscode.commands.registerCommand('smartDependencyAssistant.showDashboard', async () => {
+      await handleShowDashboardCommand();
+    })
+  );
 }
 
 async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
@@ -559,6 +602,204 @@ async function handleCleanupCommand(): Promise<void> {
   ).then(choice => {
     if (choice === 'Rollback') { void snapshotManager.restoreLatest(); }
   });
+}
+
+// ─── New Feature Handlers ─────────────────────────────────────────────────────
+
+async function handleEnvironmentDoctorCommand(): Promise<void> {
+  notificationManager.showStatusMessage('🔍 Running Environment Doctor...', 3000);
+  
+  try {
+    const report = await environmentDoctor.diagnose();
+    const output = vscode.window.createOutputChannel('Dependify: Environment Doctor');
+    output.clear();
+    output.show();
+
+    output.appendLine('═══════════════════════════════════════════════════');
+    output.appendLine('📋 ENVIRONMENT DOCTOR REPORT');
+    output.appendLine('═══════════════════════════════════════════════════\n');
+    output.appendLine(`Health Score: ${report.healthScore}/100`);
+    output.appendLine(`Summary: ${report.summary}\n`);
+
+    // Python
+    if (report.python.installed) {
+      output.appendLine(`✅ Python ${report.python.version} installed`);
+    } else {
+      output.appendLine('❌ Python not installed');
+    }
+
+    // Node.js
+    if (report.node.installed) {
+      output.appendLine(`✅ Node.js ${report.node.version} installed`);
+    }
+
+    // Virtual Environment
+    if (report.venv.exists) {
+      output.appendLine(`✅ Virtual environment found: ${report.venv.path}`);
+      output.appendLine(`   Status: ${report.venv.active ? 'ACTIVE' : 'INACTIVE'}`);
+    } else {
+      output.appendLine('⚠️ No virtual environment found');
+    }
+
+    // Interpreter
+    if (report.interpreter.correct) {
+      output.appendLine(`✅ Python interpreter configured: ${report.interpreter.selected}`);
+    } else {
+      output.appendLine('❌ Python interpreter not configured or invalid');
+    }
+
+    // Issues
+    if (report.issues.length > 0) {
+      output.appendLine('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      output.appendLine('⚠️ DETECTED ISSUES:\n');
+      
+      for (const issue of report.issues) {
+        output.appendLine(`[${issue.severity.toUpperCase()}] ${issue.title}`);
+        output.appendLine(`Description: ${issue.description}`);
+        if (issue.currentValue) output.appendLine(`Current: ${issue.currentValue}`);
+        if (issue.expectedValue) output.appendLine(`Expected: ${issue.expectedValue}`);
+        output.appendLine(`Fix: ${issue.suggestedFix}`);
+        output.appendLine('');
+      }
+    } else {
+      output.appendLine('\n✅ No issues detected!');
+    }
+
+    activityTracker.logActivity(
+      ActivityType.EnvironmentChecked, ActivitySeverity.Info,
+      '✅ Environment Doctor Completed',
+      { description: `Health score: ${report.healthScore}/100, Issues: ${report.issues.length}` }
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Environment Doctor failed: ${error}`);
+  }
+}
+
+async function handleProjectSetupCommand(): Promise<void> {
+  notificationManager.showStatusMessage('🔍 Analyzing project...', 3000);
+
+  try {
+    const projectInfo = await projectSetupWizard.analyzeProject();
+    
+    const message = `${projectInfo.type.toUpperCase()} project detected (${projectInfo.pythonFiles} Python files, ${projectInfo.nodeFiles} Node files).`;
+    
+    if (projectInfo.setupSteps.length === 0) {
+      vscode.window.showInformationMessage(`${message} No setup needed!`);
+      return;
+    }
+
+    const proceed = await vscode.window.showQuickPick(
+      ['Yes', 'Cancel'],
+      { placeHolder: `${message} Start one-click setup?` }
+    );
+
+    if (proceed === 'Yes') {
+      notificationManager.showStatusMessage('⚙️ Starting project setup...', 2000);
+      const results = await projectSetupWizard.executeSetup(projectInfo);
+      
+      activityTracker.logActivity(
+        ActivityType.ProjectSetup, ActivitySeverity.Info,
+        '✅ Project Setup Completed',
+        { description: `Completed ${results.length} setup steps` }
+      );
+    }
+  } catch (error) {
+    vscode.window.showErrorMessage(`Project setup failed: ${error}`);
+  }
+}
+
+async function handleDependencySyncCommand(): Promise<void> {
+  notificationManager.showStatusMessage('🔄 Syncing dependencies...', 2000);
+
+  try {
+    const [pythonResult, nodeResult] = await Promise.all([
+      dependencySync.syncPythonDependencies(),
+      dependencySync.syncNodeDependencies(),
+    ]);
+
+    const output = vscode.window.createOutputChannel('Dependify: Dependency Sync');
+    output.clear();
+    output.show();
+
+    output.appendLine('═══════════════════════════════════════════════════');
+    output.appendLine('📦 DEPENDENCY SYNC REPORT');
+    output.appendLine('═══════════════════════════════════════════════════\n');
+
+    output.appendLine(`Python: ${pythonResult.summary}`);
+    output.appendLine(`Node.js: ${nodeResult.summary}`);
+
+    if (pythonResult.errors.length > 0 || nodeResult.errors.length > 0) {
+      output.appendLine('\n⚠️ Errors:');
+      [...pythonResult.errors, ...nodeResult.errors].forEach(e => output.appendLine(`  - ${e}`));
+    }
+
+    activityTracker.logActivity(
+      ActivityType.DependenciesSynced, ActivitySeverity.Info,
+      '✅ Dependencies Synced',
+      { description: 'Installed packages synchronized with manifest files' }
+    );
+
+    vscode.window.showInformationMessage('✅ Dependencies synced successfully!');
+  } catch (error) {
+    vscode.window.showErrorMessage(`Dependency sync failed: ${error}`);
+  }
+}
+
+async function handleExportEnvironmentCommand(): Promise<void> {
+  const name = await vscode.window.showInputBox({
+    prompt: 'Enter environment snapshot name:',
+    value: `env-${new Date().toISOString().split('T')[0]}`,
+  });
+
+  if (!name) return;
+
+  const description = await vscode.window.showInputBox({
+    prompt: 'Add a description (optional):',
+  });
+
+  try {
+    notificationManager.showStatusMessage('📸 Exporting environment...', 2000);
+    const snapshot = await teamEnvironmentSharing.exportEnvironment(name, description);
+    
+    vscode.window.showInformationMessage(
+      `✅ Environment exported: ${snapshot.id}. You can share the .dependify-snapshots folder with your team.`
+    );
+
+    activityTracker.logActivity(
+      ActivityType.EnvironmentExported, ActivitySeverity.Info,
+      '📸 Environment Snapshot Created',
+      { description: `Snapshot: ${name}` }
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Export failed: ${error}`);
+  }
+}
+
+async function handleShowDashboardCommand(): Promise<void> {
+  try {
+    const scan = await dependencyScanner.scanWorkspace(settingsManager?.supportedLanguages);
+    const conflicts = await conflictDetector.detectConflicts(SupportedLanguage.Python);
+    
+    const dashboard = await workspaceDashboard.buildDashboard(scan, conflicts.conflicts.length);
+    const html = workspaceDashboard.generateHTML(dashboard);
+
+    const panel = vscode.window.createWebviewPanel(
+      'dependifyDashboard',
+      '📊 Dependency Dashboard',
+      vscode.ViewColumn.One,
+      { enableScripts: true }
+    );
+
+    panel.webview.html = html;
+
+    activityTracker.logActivity(
+      ActivityType.DashboardViewed, ActivitySeverity.Info,
+      '📊 Dashboard Viewed',
+      { description: `Health Score: ${dashboard.overallScore}/100` }
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Dashboard failed: ${error}`);
+  }
 }
 
 // ─── Webview Handlers ─────────────────────────────────────────────────────────
