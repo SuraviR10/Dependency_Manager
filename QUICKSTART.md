@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="media/icon.png" alt="DART Logo" width="128"/>
+  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
 </p>
 
 # Quick Start Guide
 
-Get the DART extension up and running in 5 minutes.
+Get the Dependify extension up and running in 5 minutes.
 
 ## Prerequisites
 

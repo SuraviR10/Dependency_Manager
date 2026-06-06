@@ -1,4 +1,4 @@
-# DART — Deliverables Checklist
+# Dependify — Deliverables Checklist
 
 ## ✅ Complete Project Delivered
 
@@ -560,7 +560,7 @@ ls -la *.md
 
 ## 🎉 Conclusion
 
-The **DART** VS Code extension is **complete and ready for development, testing, and deployment**.
+The **Dependify** VS Code extension is **complete and ready for development, testing, and deployment**.
 
 All code is:
 - ✅ Production-quality

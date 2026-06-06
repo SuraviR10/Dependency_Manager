@@ -1,6 +1,6 @@
 {
-  "name": "dart",
-  "displayName": "DART - Dependency Analysis and Resolution Toolkit",
+  "name": "dependify",
+  "displayName": "Dependify - Dependency Analysis and Resolution Toolkit",
   "description": "Intelligent assistant that detects missing dependencies, sets up virtual environments, and monitors project health for Python and Node.js.",
   "version": "2.0.0",
   "publisher": "DependencyAssistant",
@@ -8,7 +8,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/DependencyAssistant/dart"
+    "url": "https://github.com/DependencyAssistant/dependify"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -35,109 +35,109 @@
   "contributes": {
     "commands": [
       {
-        "command": "dart.openPanel",
-        "title": "DART: Open Panel"
+        "command": "dependify.openPanel",
+        "title": "Dependify: Open Panel"
       },
       {
-        "command": "dart.refreshDependencies",
-        "title": "DART: Refresh Dependency Scan"
+        "command": "dependify.refreshDependencies",
+        "title": "Dependify: Refresh Dependency Scan"
       },
       {
-        "command": "dart.createEnvironment",
-        "title": "DART: Create Project Environment"
+        "command": "dependify.createEnvironment",
+        "title": "Dependify: Create Project Environment"
       },
       {
-        "command": "dart.cleanupEnvironment",
-        "title": "DART: Cleanup Unused Dependencies"
+        "command": "dependify.cleanupEnvironment",
+        "title": "Dependify: Cleanup Unused Dependencies"
       },
       {
-        "command": "dart.repairProject",
-        "title": "DART: Repair Project Environment"
+        "command": "dependify.repairProject",
+        "title": "Dependify: Repair Project Environment"
       },
       {
-        "command": "dart.installDependency",
-        "title": "DART: Install Dependency"
+        "command": "dependify.installDependency",
+        "title": "Dependify: Install Dependency"
       },
       {
-        "command": "dart.copyCommand",
-        "title": "DART: Copy Install Command"
+        "command": "dependify.copyCommand",
+        "title": "Dependify: Copy Install Command"
       },
       {
-        "command": "dart.checkTerminal",
-        "title": "DART: Check Terminal Output"
+        "command": "dependify.checkTerminal",
+        "title": "Dependify: Check Terminal Output"
       },
       {
-        "command": "dart.runEnvironmentDoctor",
-        "title": "DART: Run Environment Doctor"
+        "command": "dependify.runEnvironmentDoctor",
+        "title": "Dependify: Run Environment Doctor"
       },
       {
-        "command": "dart.setupProject",
-        "title": "DART: One-Click Project Setup"
+        "command": "dependify.setupProject",
+        "title": "Dependify: One-Click Project Setup"
       },
       {
-        "command": "dart.syncDependencies",
-        "title": "DART: Sync Dependencies"
+        "command": "dependify.syncDependencies",
+        "title": "Dependify: Sync Dependencies"
       },
       {
-        "command": "dart.exportEnvironment",
-        "title": "DART: Export Environment Snapshot"
+        "command": "dependify.exportEnvironment",
+        "title": "Dependify: Export Environment Snapshot"
       },
       {
-        "command": "dart.showDashboard",
-        "title": "DART: Show Workspace Dashboard"
+        "command": "dependify.showDashboard",
+        "title": "Dependify: Show Workspace Dashboard"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "dart.openPanel"
+          "command": "dependify.openPanel"
         },
         {
-          "command": "dart.refreshDependencies"
+          "command": "dependify.refreshDependencies"
         },
         {
-          "command": "dart.createEnvironment"
+          "command": "dependify.createEnvironment"
         },
         {
-          "command": "dart.cleanupEnvironment"
+          "command": "dependify.cleanupEnvironment"
         },
         {
-          "command": "dart.repairProject"
+          "command": "dependify.repairProject"
         },
         {
-          "command": "dart.checkTerminal"
+          "command": "dependify.checkTerminal"
         },
         {
-          "command": "dart.runEnvironmentDoctor"
+          "command": "dependify.runEnvironmentDoctor"
         },
         {
-          "command": "dart.setupProject"
+          "command": "dependify.setupProject"
         },
         {
-          "command": "dart.syncDependencies"
+          "command": "dependify.syncDependencies"
         },
         {
-          "command": "dart.exportEnvironment"
+          "command": "dependify.exportEnvironment"
         },
         {
-          "command": "dart.showDashboard"
+          "command": "dependify.showDashboard"
         }
       ]
     },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "dart",
-          "title": "DART",
+          "id": "dependify",
+          "title": "Dependify",
           "icon": "media/icon.png"
         }
       ]
     },
     "views": {
-      "dart": [
+      "dependify": [
         {
           "id": "smartDependencyPanel",
-          "name": "DART Assistant",
+          "name": "Dependify Assistant",
           "type": "webview",
           "icon": "media/icon.png"
         },
@@ -152,39 +152,39 @@
     },
     "configuration": {
       "type": "object",
-      "title": "DART Settings",
+      "title": "Dependify Settings",
       "properties": {
-        "dart.autoInstall": {
+        "dependify.autoInstall": {
           "type": "boolean",
           "default": true,
           "description": "Automatically install missing dependencies when detected."
         },
-        "dart.confirmBeforeInstall": {
+        "dependify.confirmBeforeInstall": {
           "type": "boolean",
           "default": false,
           "description": "Ask for confirmation before installing a missing dependency."
         },
-        "dart.autoCreateEnv": {
+        "dependify.autoCreateEnv": {
           "type": "boolean",
           "default": false,
           "description": "Automatically create and configure environments for supported projects."
         },
-        "dart.autoActivateEnv": {
+        "dependify.autoActivateEnv": {
           "type": "boolean",
           "default": false,
           "description": "Automatically activate the virtual environment after creation."
         },
-        "dart.autoReload": {
+        "dependify.autoReload": {
           "type": "boolean",
           "default": false,
           "description": "Automatically reload the workspace after environment setup."
         },
-        "dart.autoFixDependencyIssues": {
+        "dependify.autoFixDependencyIssues": {
           "type": "boolean",
           "default": false,
           "description": "Automatically attempt to fix detected dependency issues."
         },
-        "dart.notifications": {
+        "dependify.notifications": {
           "type": "string",
           "enum": [
             "minimal",
@@ -194,64 +194,64 @@
           "default": "detailed",
           "description": "Notification verbosity level."
         },
-        "dart.showSuccessNotifications": {
+        "dependify.showSuccessNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show notifications when packages are installed successfully."
         },
-        "dart.showWarningNotifications": {
+        "dependify.showWarningNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show warning notifications for dependency issues."
         },
-        "dart.showErrorNotifications": {
+        "dependify.showErrorNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show error notifications when operations fail."
         },
-        "dart.showCommandExecutionNotifications": {
+        "dependify.showCommandExecutionNotifications": {
           "type": "boolean",
           "default": false,
           "description": "Show a notification each time a command is executed in the terminal."
         },
-        "dart.healthCheck": {
+        "dependify.healthCheck": {
           "type": "boolean",
           "default": true,
           "description": "Enable dependency health checks and dashboard updates."
         },
-        "dart.scanOnStartup": {
+        "dependify.scanOnStartup": {
           "type": "boolean",
           "default": true,
           "description": "Scan the workspace for dependency issues on startup."
         },
-        "dart.scanOnSave": {
+        "dependify.scanOnSave": {
           "type": "boolean",
           "default": true,
           "description": "Re-scan when a source file is saved."
         },
-        "dart.scanOnOpen": {
+        "dependify.scanOnOpen": {
           "type": "boolean",
           "default": false,
           "description": "Re-scan when a source file is opened."
         },
-        "dart.scanDelayMs": {
+        "dependify.scanDelayMs": {
           "type": "number",
           "default": 1200,
           "minimum": 300,
           "maximum": 10000,
           "description": "Debounce delay (ms) before scanning after editor changes."
         },
-        "dart.safeMode": {
+        "dependify.safeMode": {
           "type": "boolean",
           "default": true,
           "description": "Block commands that appear unsafe or contain injection characters."
         },
-        "dart.verifyPackagesBeforeInstall": {
+        "dependify.verifyPackagesBeforeInstall": {
           "type": "boolean",
           "default": true,
           "description": "Verify package exists in PyPI/npm registry before running install command."
         },
-        "dart.languages": {
+        "dependify.languages": {
           "type": "array",
           "items": {
             "type": "string",
@@ -266,17 +266,17 @@
             "python",
             "javascript"
           ],
-          "description": "Languages DART should monitor."
+          "description": "Languages Dependify should monitor."
         },
-        "dart.statusBarEnabled": {
+        "dependify.statusBarEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "Show DART status in the VS Code status bar."
+          "description": "Show Dependify status in the VS Code status bar."
         },
-        "dart.outputLogsEnabled": {
+        "dependify.outputLogsEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable DART log output channel."
+          "description": "Enable Dependify log output channel."
         }
       }
     }

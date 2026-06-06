@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="media/icon.png" alt="DART Logo" width="128"/>
+  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
 </p>
 
-# DART — Development Guide
+# Dependify — Development Guide
 
-A comprehensive guide to understanding, modifying, and extending the DART extension.
+A comprehensive guide to understanding, modifying, and extending the Dependify extension.
 
 ## Table of Contents
 

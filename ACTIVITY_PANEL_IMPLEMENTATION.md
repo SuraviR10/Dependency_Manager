@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="media/icon.png" alt="DART Logo" width="128"/>
+  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
 </p>
 
-# 📦 DART Activity Assistant Panel - Implementation Complete
+# 📦 Dependify Activity Assistant Panel - Implementation Complete
 
 ## 📋 Overview
 A professional sidebar assistant panel that tracks all commands executed, dependencies installed, environment changes, and project setup history in real-time. This makes the extension feel like an intelligent developer assistant.
