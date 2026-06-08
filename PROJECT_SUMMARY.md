@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+  <img src="media/icon.png" alt="DARTX Logo" width="128"/>
 </p>
 
-# Dependify — Project Summary
+# DARTX — Project Summary
 
 ## ✅ Project Complete
 
-The **Dependify** VS Code extension has been successfully scaffolded with a complete, production-ready codebase.
+The **DARTX** VS Code extension has been successfully scaffolded with a complete, production-ready codebase.
 
 ---
 

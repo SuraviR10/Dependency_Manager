@@ -1,6 +1,6 @@
 {
-  "name": "dart",
-  "displayName": "DART - Dependency Analysis and Resolution Toolkit",
+  "name": "dartx",
+  "displayName": "DARTX - Dependency Analysis and Resolution Toolkit",
   "description": "Proactive Dependency Doctor and Environment Management System. Automatically resolves missing packages, prevents clone-and-run issues, and visualizes impact.",
   "version": "1.0.0",
   "publisher": "DependencyAssistant",
@@ -40,119 +40,119 @@
   "contributes": {
     "commands": [
       {
-        "command": "dart.openPanel",
-        "title": "DART: Open Assistant Panel"
+        "command": "dartx.openPanel",
+        "title": "DARTX: Open Assistant Panel"
       },
       {
-        "command": "dart.dependencyDoctor",
-        "title": "DART: Run Dependency Doctor"
+        "command": "dartx.dependencyDoctor",
+        "title": "DARTX: Run Dependency Doctor"
       },
       {
-        "command": "dart.refreshDependencies",
-        "title": "DART: Refresh Dependency Scan"
+        "command": "dartx.refreshDependencies",
+        "title": "DARTX: Refresh Dependency Scan"
       },
       {
-        "command": "dart.createEnvironment",
-        "title": "DART: Create Project Environment"
+        "command": "dartx.createEnvironment",
+        "title": "DARTX: Create Project Environment"
       },
       {
-        "command": "dart.cleanupEnvironment",
-        "title": "DART: Cleanup Unused Dependencies"
+        "command": "dartx.cleanupEnvironment",
+        "title": "DARTX: Cleanup Unused Dependencies"
       },
       {
-        "command": "dart.repairProject",
-        "title": "DART: Repair Project Environment"
+        "command": "dartx.repairProject",
+        "title": "DARTX: Repair Project Environment"
       },
       {
-        "command": "dart.installDependency",
-        "title": "DART: Install Dependency"
+        "command": "dartx.installDependency",
+        "title": "DARTX: Install Dependency"
       },
       {
-        "command": "dart.copyCommand",
-        "title": "DART: Copy Install Command"
+        "command": "dartx.copyCommand",
+        "title": "DARTX: Copy Install Command"
       },
       {
-        "command": "dart.checkTerminal",
-        "title": "DART: Check Terminal Output"
+        "command": "dartx.checkTerminal",
+        "title": "DARTX: Check Terminal Output"
       },
       {
-        "command": "dart.runEnvironmentDoctor",
-        "title": "DART: Run Environment Doctor"
+        "command": "dartx.runEnvironmentDoctor",
+        "title": "DARTX: Run Environment Doctor"
       },
       {
-        "command": "dart.setupProject",
-        "title": "DART: Clone & Run Setup"
+        "command": "dartx.setupProject",
+        "title": "DARTX: Clone & Run Setup"
       },
       {
-        "command": "dart.syncDependencies",
-        "title": "DART: Sync Dependencies"
+        "command": "dartx.syncDependencies",
+        "title": "DARTX: Sync Dependencies"
       },
       {
-        "command": "dart.exportEnvironment",
-        "title": "DART: Export Environment Snapshot"
+        "command": "dartx.exportEnvironment",
+        "title": "DARTX: Export Environment Snapshot"
       },
       {
-        "command": "dart.showDashboard",
-        "title": "DART: Show Workspace Dashboard"
+        "command": "dartx.showDashboard",
+        "title": "DARTX: Show Workspace Dashboard"
       },
       {
-        "command": "dart.impactAnalysis",
-        "title": "DART: Dependency Impact Analysis"
+        "command": "dartx.impactAnalysis",
+        "title": "DARTX: Dependency Impact Analysis"
       },
       {
-        "command": "dart.upgradeAdvisor",
-        "title": "DART: Smart Upgrade Advisor"
+        "command": "dartx.upgradeAdvisor",
+        "title": "DARTX: Smart Upgrade Advisor"
       },
       {
-        "command": "dart.knowledgeGraph",
-        "title": "DART: Dependency Knowledge Graph"
+        "command": "dartx.knowledgeGraph",
+        "title": "DARTX: Dependency Knowledge Graph"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "dart.openPanel"
+          "command": "dartx.openPanel"
         },
         {
-          "command": "dart.dependencyDoctor"
+          "command": "dartx.dependencyDoctor"
         },
         {
-          "command": "dart.setupProject"
+          "command": "dartx.setupProject"
         },
         {
-          "command": "dart.impactAnalysis"
+          "command": "dartx.impactAnalysis"
         },
         {
-          "command": "dart.upgradeAdvisor"
+          "command": "dartx.upgradeAdvisor"
         },
         {
-          "command": "dart.knowledgeGraph"
+          "command": "dartx.knowledgeGraph"
         },
         {
-          "command": "dart.showDashboard"
+          "command": "dartx.showDashboard"
         }
       ]
     },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "dart",
-          "title": "DART",
-          "icon": "media/dart.svg"
+          "id": "dartx",
+          "title": "DARTX",
+          "icon": "media/dartx.svg"
         }
       ]
     },
     "views": {
-      "dart": [
+      "dartx": [
         {
           "id": "smartDependencyPanel",
-          "name": "DART Assistant",
+          "name": "DARTX Assistant",
           "type": "webview",
           "icon": "media/icon.png"
         },
         {
           "id": "dartActivityPanel",
-          "name": "DART Activity",
+          "name": "DARTX Activity",
           "type": "webview",
           "visibility": "hidden",
           "icon": "media/icon.png"
@@ -161,39 +161,39 @@
     },
     "configuration": {
       "type": "object",
-      "title": "DART Settings",
+      "title": "DARTX Settings",
       "properties": {
-        "dart.autoInstall": {
+        "dartx.autoInstall": {
           "type": "boolean",
           "default": true,
           "description": "Automatically install missing dependencies when detected."
         },
-        "dart.confirmBeforeInstall": {
+        "dartx.confirmBeforeInstall": {
           "type": "boolean",
           "default": false,
           "description": "Ask for confirmation before installing a missing dependency."
         },
-        "dart.autoCreateEnv": {
+        "dartx.autoCreateEnv": {
           "type": "boolean",
           "default": false,
           "description": "Automatically create and configure environments for supported projects."
         },
-        "dart.autoActivateEnv": {
+        "dartx.autoActivateEnv": {
           "type": "boolean",
           "default": false,
           "description": "Automatically activate the virtual environment after creation."
         },
-        "dart.autoReload": {
+        "dartx.autoReload": {
           "type": "boolean",
           "default": false,
           "description": "Automatically reload the workspace after environment setup."
         },
-        "dart.autoFixDependencyIssues": {
+        "dartx.autoFixDependencyIssues": {
           "type": "boolean",
           "default": false,
           "description": "Automatically attempt to fix detected dependency issues."
         },
-        "dart.notifications": {
+        "dartx.notifications": {
           "type": "string",
           "enum": [
             "minimal",
@@ -203,64 +203,64 @@
           "default": "detailed",
           "description": "Notification verbosity level."
         },
-        "dart.showSuccessNotifications": {
+        "dartx.showSuccessNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show notifications when packages are installed successfully."
         },
-        "dart.showWarningNotifications": {
+        "dartx.showWarningNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show warning notifications for dependency issues."
         },
-        "dart.showErrorNotifications": {
+        "dartx.showErrorNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show error notifications when operations fail."
         },
-        "dart.showCommandExecutionNotifications": {
+        "dartx.showCommandExecutionNotifications": {
           "type": "boolean",
           "default": false,
           "description": "Show a notification each time a command is executed in the terminal."
         },
-        "dart.healthCheck": {
+        "dartx.healthCheck": {
           "type": "boolean",
           "default": true,
           "description": "Enable dependency health checks and dashboard updates."
         },
-        "dart.scanOnStartup": {
+        "dartx.scanOnStartup": {
           "type": "boolean",
           "default": true,
           "description": "Scan the workspace for dependency issues on startup."
         },
-        "dart.scanOnSave": {
+        "dartx.scanOnSave": {
           "type": "boolean",
           "default": true,
           "description": "Re-scan when a source file is saved."
         },
-        "dart.scanOnOpen": {
+        "dartx.scanOnOpen": {
           "type": "boolean",
           "default": false,
           "description": "Re-scan when a source file is opened."
         },
-        "dart.scanDelayMs": {
+        "dartx.scanDelayMs": {
           "type": "number",
           "default": 1200,
           "minimum": 300,
           "maximum": 10000,
           "description": "Debounce delay (ms) before scanning after editor changes."
         },
-        "dart.safeMode": {
+        "dartx.safeMode": {
           "type": "boolean",
           "default": true,
           "description": "Block commands that appear unsafe or contain injection characters."
         },
-        "dart.verifyPackagesBeforeInstall": {
+        "dartx.verifyPackagesBeforeInstall": {
           "type": "boolean",
           "default": true,
           "description": "Verify package exists in PyPI/npm registry before running install command."
         },
-        "dart.languages": {
+        "dartx.languages": {
           "type": "array",
           "items": {
             "type": "string",
@@ -275,17 +275,17 @@
             "python",
             "javascript"
           ],
-          "description": "Languages Dependify should monitor."
+          "description": "Languages DARTX should monitor."
         },
-        "dart.statusBarEnabled": {
+        "dartx.statusBarEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "Show Dependify status in the VS Code status bar."
+          "description": "Show DARTX status in the VS Code status bar."
         },
-        "dart.outputLogsEnabled": {
+        "dartx.outputLogsEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable Dependify log output channel."
+          "description": "Enable DARTX log output channel."
         }
       }
     }

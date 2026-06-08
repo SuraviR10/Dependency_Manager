@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+  <img src="media/icon.png" alt="DARTX Logo" width="128"/>
 </p>
 
-# Dependify (Smart Dependency Assistant)
+# DARTX (Smart Dependency Assistant)
 
 A production-ready VS Code extension that helps developers quickly identify and resolve dependency-related issues while coding.
 
@@ -280,6 +280,6 @@ MIT © 2024 Suravi R
 
 ---
 
-**Happy coding! Let DART handle your dependency issues!** 📦🚀
+**Happy coding! Let DARTX handle your dependency issues!** 📦🚀
 
 *Built with ❤️ by Suravi R*

@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+  <img src="media/icon.png" alt="DARTX Logo" width="128"/>
 </p>
 
-# Dependify — Development Guide
+# DARTX — Development Guide
 
-A comprehensive guide to understanding, modifying, and extending the Dependify extension.
+A comprehensive guide to understanding, modifying, and extending the DARTX extension.
 
 ## Table of Contents
 
@@ -217,9 +217,9 @@ Alternatives:
 **Responsibility**: Register and manage VS Code commands
 
 **Commands Registered**:
-- `dart.openPanel` - Open the issue panel
-- `dart.installDependency` - Install a package
-- `dart.copyCommand` - Copy command to clipboard
+- `dartx.openPanel` - Open the issue panel
+- `dartx.installDependency` - Install a package
+- `dartx.copyCommand` - Copy command to clipboard
 
 **Execution Methods**:
 - `executeInTerminal()` - Sends command to active terminal

@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+  <img src="media/icon.png" alt="DARTX Logo" width="128"/>
 </p>
 
 # Quick Start Guide
 
-Get the Dependify extension up and running in 5 minutes.
+Get the DARTX extension up and running in 5 minutes.
 
 ## Prerequisites
 
@@ -18,8 +18,8 @@ Get the Dependify extension up and running in 5 minutes.
 
 ```bash
 # If you don't have the project yet
-mkdir dart
-cd dart
+mkdir dartx
+cd dartx
 git clone <repository-url> .
 # or copy the files to this directory
 ```

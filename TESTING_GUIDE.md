@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="media/icon.png" alt="Dependify Logo" width="128"/>
+  <img src="media/icon.png" alt="DARTX Logo" width="128"/>
 </p>
 
 # 🚀 Testing Extension on Your Other Projects
 
-Quick guide to apply Dependify to your other projects and test it.
+Quick guide to apply DARTX to your other projects and test it.
 
 ## 3 Ways to Test
 
@@ -14,7 +14,7 @@ Perfect for quick testing on different projects:
 
 **Step 1**: Build the extension
 ```bash
-cd ~/Dependify
+cd ~/DARTX
 npm run compile
 ```
 
