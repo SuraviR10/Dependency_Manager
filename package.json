@@ -3,7 +3,7 @@
   "displayName": "DART - Dependency Analysis and Resolution Toolkit",
   "description": "Proactive Dependency Doctor and Environment Management System. Automatically resolves missing packages, prevents clone-and-run issues, and visualizes impact.",
   "version": "1.0.0",
-  "publisher": "SuraviR10",
+  "publisher": "DependencyAssistant",
   "author": "Suravi R",
   "icon": "media/icon.png",
   "license": "MIT",
