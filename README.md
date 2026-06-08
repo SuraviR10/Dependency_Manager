@@ -270,7 +270,7 @@ Contributions welcome! Please:
 
 ## License
 
-MIT © 2024
+MIT © 2024 Suravi R
 
 ## Support
 
@@ -280,4 +280,6 @@ MIT © 2024
 
 ---
 
-**Happy coding! Let Dependify handle your dependency issues!** 📦🚀
+**Happy coding! Let DART handle your dependency issues!** 📦🚀
+
+*Built with ❤️ by Suravi R*

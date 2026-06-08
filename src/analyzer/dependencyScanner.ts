@@ -18,6 +18,7 @@ export interface DependencyScanResult {
   declaredPackages: Map<string, string>;
   missingPackages: Set<string>;
   unusedPackages: Set<string>;
+  missingEnvVars: Set<string>;
   scannedFiles: number;
 }
 
@@ -48,6 +49,7 @@ export class DependencyScanner {
     const pythonPackages = new Map<string, Set<string>>();
     const nodePackages = new Map<string, Set<string>>();
     const declaredPackages = new Map<string, string>();
+    const missingEnvVars = new Set<string>();
     const detectedLanguages = new Set<SupportedLanguage>();
     let scannedFiles = 0;
 
@@ -77,12 +79,12 @@ export class DependencyScanner {
       if (extension === '.py') {
         if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.Python)) {
           detectedLanguages.add(SupportedLanguage.Python);
-          await this.collectImports(filePath, SupportedLanguage.Python, pythonPackages);
+          await this.collectImports(filePath, SupportedLanguage.Python, pythonPackages, missingEnvVars);
         }
       } else if (['.js', '.jsx', '.ts', '.tsx'].includes(extension)) {
         if (!allowedLanguages || allowedLanguages.has(SupportedLanguage.NodeJS)) {
           detectedLanguages.add(SupportedLanguage.NodeJS);
-          await this.collectImports(filePath, SupportedLanguage.NodeJS, nodePackages);
+          await this.collectImports(filePath, SupportedLanguage.NodeJS, nodePackages, missingEnvVars);
         }
       }
     }
@@ -112,6 +114,7 @@ export class DependencyScanner {
       declaredPackages,
       missingPackages,
       unusedPackages,
+      missingEnvVars,
       scannedFiles,
     };
 
@@ -137,7 +140,8 @@ export class DependencyScanner {
   private async collectImports(
     filePath: string,
     language: SupportedLanguage,
-    usedPackages: Map<string, Set<string>>
+    usedPackages: Map<string, Set<string>>,
+    missingEnvVars: Set<string>
   ): Promise<void> {
     try {
       const content = await fs.promises.readFile(filePath, 'utf-8');
@@ -152,6 +156,13 @@ export class DependencyScanner {
         const fileSet = usedPackages.get(normalized) || new Set<string>();
         fileSet.add(path.relative(this.workspacePath, filePath));
         usedPackages.set(normalized, fileSet);
+      }
+
+      const envVars = this.parseEnvVars(content, language);
+      for (const envVar of envVars) {
+        if (!process.env[envVar]) {
+          missingEnvVars.add(envVar);
+        }
       }
     } catch (error) {
       // If a single file cannot be read, continue scanning others.
@@ -195,6 +206,28 @@ export class DependencyScanner {
     }
 
     return packages;
+  }
+
+  private parseEnvVars(content: string, language: SupportedLanguage): Set<string> {
+    const vars = new Set<string>();
+    
+    if (language === SupportedLanguage.Python) {
+      // Matches: os.getenv("API_KEY") or os.environ.get('API_KEY')
+      const regex = /os\.(?:getenv|environ\.get)\(['"]([^'"]+)['"]\)/g;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(content))) {
+        vars.add(match[1]);
+      }
+    } else if (language === SupportedLanguage.NodeJS) {
+      // Matches: process.env.API_KEY or process.env['API_KEY']
+      const regex = /process\.env(?:\[['"]([^'"]+)['"]\]|\.([a-zA-Z_0-9]+))/g;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(content))) {
+        vars.add(match[1] || match[2]);
+      }
+    }
+    
+    return vars;
   }
 
   private normalizePythonPackageName(moduleName: string): string | null {
