@@ -242,7 +242,12 @@ function setupWorkspaceListeners(context: vscode.ExtensionContext): void {
 
   if (settingsManager.scanOnSave) {
     context.subscriptions.push(
-      vscode.workspace.onDidSaveTextDocument(doc => { if (shouldRefresh(doc)) { scheduleRefresh(); } })
+      vscode.workspace.onDidSaveTextDocument(doc => { 
+        if (shouldRefresh(doc)) { 
+          scheduleRefresh(); 
+          processDiagnostics(vscode.languages.getDiagnostics(doc.uri));
+        } 
+      })
     );
   }
 
@@ -284,12 +289,6 @@ function setupTerminalListener(context: vscode.ExtensionContext): void {
       const active = vscode.window.activeTerminal;
       if (active) {
         void processTerminalOutput(terminalMonitor.getTerminalOutput(active));
-      }
-    }),
-
-    vscode.languages.onDidChangeDiagnostics(event => {
-      for (const uri of event.uris) {
-        processDiagnostics(vscode.languages.getDiagnostics(uri));
       }
     })
   );

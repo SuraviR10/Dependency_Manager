@@ -526,6 +526,20 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
   private getRawStyles(): string {
     return `
+        :root {
+          /* Professional Dark Blue Palette */
+          --dartx-bg: #090c10;
+          --dartx-card-bg: #161b22;
+          --dartx-border: #30363d;
+          --dartx-accent-blue: #58a6ff;
+          --dartx-accent-hover: #1f6feb;
+          --dartx-text-main: #c9d1d9;
+          --dartx-text-muted: #8b949e;
+          --dartx-success: #238636;
+          --dartx-warning: #d29922;
+          --dartx-error: #f85149;
+        }
+
         * {
           margin: 0;
           padding: 0;
@@ -534,10 +548,10 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          color: var(--vscode-foreground);
-          background-color: var(--vscode-editor-background);
+          color: var(--dartx-text-main);
+          background-color: var(--dartx-bg);
           padding: 16px;
-          line-height: 1.6;
+          line-height: 1.5;
         }
 
         .container {
@@ -558,16 +572,19 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         .empty-state h2 {
           color: var(--vscode-foreground);
+          color: var(--dartx-text-main);
           margin-bottom: 12px;
         }
 
         .issue-header {
           border-left: 4px solid;
           padding: 16px;
-          background: linear-gradient(145deg, var(--vscode-editor-lineHighlightBackground), transparent);
+          background: var(--dartx-card-bg);
           border-radius: 8px;
           margin-bottom: 16px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+          border: 1px solid var(--dartx-border);
         }
 
         .header-top {
@@ -587,6 +604,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           margin: 0;
           font-size: 24px;
           color: var(--vscode-foreground);
+          color: var(--dartx-text-main);
         }
 
         .severity-badge {
@@ -626,16 +644,26 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         .card {
           background-color: var(--vscode-editor-lineHighlightBackground);
+          background-color: var(--dartx-card-bg);
           padding: 16px;
           border-radius: 8px;
           margin-bottom: 12px;
           border: 1px solid var(--vscode-editor-lineHighlightBorder);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          margin-bottom: 16px;
+          border: 1px solid var(--dartx-border);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+          transition: border-color 0.2s ease;
+        }
+
+        .card:hover {
+          border-color: #484f58;
         }
 
         .card h3 {
           font-size: 14px;
           color: var(--vscode-foreground);
+          color: var(--dartx-accent-blue);
           margin-bottom: 8px;
           font-weight: 600;
         }
@@ -644,11 +672,13 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           font-size: 13px;
           line-height: 1.5;
           color: var(--vscode-foreground);
+          color: var(--dartx-text-main);
         }
 
         .error-text {
           display: block;
           background-color: var(--vscode-editor-background);
+          background-color: #0d1117;
           padding: 8px;
           border-radius: 3px;
           font-size: 11px;
@@ -656,12 +686,15 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           white-space: pre-wrap;
           word-break: break-word;
           color: var(--vscode-terminal-ansiRed);
+          color: var(--dartx-error);
           font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+          border: 1px solid var(--dartx-border);
         }
 
         .command-card {
           background-color: var(--vscode-textBlockQuote-background);
           border-left: 3px solid var(--vscode-textBlockQuote-border);
+          border-left: 3px solid var(--dartx-accent-blue);
         }
 
         .command-display {
@@ -673,13 +706,16 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         .command-display code {
           flex: 1;
           background-color: var(--vscode-editor-background);
+          background-color: #0d1117;
           padding: 8px 12px;
           border-radius: 3px;
           font-size: 12px;
           font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
           color: var(--vscode-terminal-ansiGreen);
+          color: var(--dartx-success);
           white-space: nowrap;
           overflow-x: auto;
+          border: 1px solid var(--dartx-border);
         }
 
         .copy-btn {
@@ -688,6 +724,10 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           border: 1px solid var(--vscode-button-secondaryBorder);
           color: var(--vscode-button-secondaryForeground);
           border-radius: 3px;
+          background-color: transparent;
+          border: 1px solid var(--dartx-border);
+          color: var(--dartx-text-main);
+          border-radius: 6px;
           cursor: pointer;
           font-size: 12px;
           white-space: nowrap;
@@ -696,12 +736,15 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         .copy-btn:hover {
           background-color: var(--vscode-button-secondaryHoverBackground);
+          border-color: var(--dartx-text-muted);
+          background-color: rgba(255, 255, 255, 0.05);
         }
 
         .confidence-bar-container {
           width: 100%;
           height: 6px;
           background-color: var(--vscode-editor-background);
+          background-color: var(--dartx-border);
           border-radius: 3px;
           overflow: hidden;
           margin-bottom: 8px;
@@ -716,6 +759,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         .confidence-text {
           font-size: 12px;
           color: var(--vscode-descriptionForeground);
+          color: var(--dartx-text-muted);
         }
 
         .status {
@@ -730,21 +774,30 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         .status.idle {
           background-color: var(--vscode-editor-background);
           color: var(--vscode-descriptionForeground);
+          background-color: #0d1117;
+          color: var(--dartx-text-muted);
+          border: 1px solid var(--dartx-border);
         }
 
         .status.installing {
           background-color: var(--vscode-statusBar-warningBackground);
           color: var(--vscode-statusBar-warningForeground);
+          background-color: rgba(210, 153, 34, 0.1);
+          color: var(--dartx-warning);
         }
 
         .status.success {
           background-color: var(--vscode-testing-iconPassed);
           color: white;
+          background-color: rgba(35, 134, 54, 0.1);
+          color: var(--dartx-success);
         }
 
         .status.error {
           background-color: var(--vscode-statusBar-errorBackground);
           color: var(--vscode-statusBar-errorForeground);
+          background-color: rgba(248, 81, 73, 0.1);
+          color: var(--dartx-error);
           gap: 12px;
         }
 
@@ -806,11 +859,14 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         .btn:hover:not(:disabled) {
           transform: translateY(-1px);
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+          background-color: var(--dartx-accent-hover);
         }
 
         .btn-primary {
           background-color: var(--vscode-button-background);
           color: var(--vscode-button-foreground);
+          background-color: var(--dartx-accent-blue);
+          color: #ffffff;
         }
 
         .btn-primary:hover:not(:disabled) {
@@ -826,10 +882,15 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           background-color: var(--vscode-button-secondaryBackground);
           color: var(--vscode-button-secondaryForeground);
           border: 1px solid var(--vscode-button-secondaryBorder);
+          background-color: transparent;
+          color: var(--dartx-text-main);
+          border: 1px solid var(--dartx-border);
         }
 
         .btn-secondary:hover {
           background-color: var(--vscode-button-secondaryHoverBackground);
+          border-color: var(--dartx-text-muted);
+          background-color: rgba(255, 255, 255, 0.05);
         }
 
         .language-info {
@@ -841,6 +902,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         .secondary-text {
           color: var(--vscode-descriptionForeground);
+          color: var(--dartx-text-muted);
           font-size: 12px;
         }
 

@@ -31,7 +31,7 @@ export function delay(ms: number): Promise<void> {
  * Supports plain names and scoped npm packages (@scope/name)
  */
 export function isValidPackageName(name: string): boolean {
-  if (!name || name.length === 0) {
+  if (!name || name.length <= 1) {
     return false;
   }
   // Block path traversal and absolute paths
