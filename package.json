@@ -2,7 +2,7 @@
   "name": "dartx",
   "displayName": "DARTX - Dependency Analysis and Resolution Toolkit",
   "description": "Proactive Dependency Doctor and Environment Management System. Automatically resolves missing packages, prevents clone-and-run issues, and visualizes impact.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "DependencyAssistant",
   "author": "Suravi R",
   "icon": "media/icon.png",

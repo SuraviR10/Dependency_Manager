@@ -243,10 +243,14 @@ function setupWorkspaceListeners(context: vscode.ExtensionContext): void {
   if (settingsManager.scanOnSave) {
     context.subscriptions.push(
       vscode.workspace.onDidSaveTextDocument(doc => { 
-        if (shouldRefresh(doc)) { 
-          scheduleRefresh(); 
-          processDiagnostics(vscode.languages.getDiagnostics(doc.uri));
-        } 
+        try {
+          if (shouldRefresh(doc)) { 
+            scheduleRefresh(); 
+            processDiagnostics(vscode.languages.getDiagnostics(doc.uri));
+          } 
+        } catch (error) {
+          console.error('[Dependify] Non-blocking error during save diagnostics:', error);
+        }
       })
     );
   }
@@ -301,78 +305,82 @@ function setupTerminalListener(context: vscode.ExtensionContext): void {
 const recentlyProcessedDiagnostics = new Set<string>();
 
 function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
-  for (const diag of diagnostics) {
-    const msg = diag.message.toLowerCase();
-
-    // Explicitly check for Pylance diagnostic codes
-    let isPylanceMissing = false;
-    if (diag.source === 'Pylance' && diag.code) {
-      const codeValue = typeof diag.code === 'object' ? diag.code.value : diag.code;
-      if (codeValue === 'reportMissingImports' || codeValue === 'reportMissingModuleSource') {
-        isPylanceMissing = true;
+  try {
+    for (const diag of diagnostics) {
+      const msg = diag.message.toLowerCase();
+  
+      // Explicitly check for Pylance diagnostic codes
+      let isPylanceMissing = false;
+      if (diag.source === 'Pylance' && diag.code) {
+        const codeValue = typeof diag.code === 'object' ? diag.code.value : diag.code;
+        if (codeValue === 'reportMissingImports' || codeValue === 'reportMissingModuleSource') {
+          isPylanceMissing = true;
+        }
       }
-    }
-
-    const isMissingImport = isPylanceMissing || (
-      msg.includes('import') &&
-      (msg.includes('could not be resolved') || msg.includes('no module') || msg.includes('cannot find'))
-    );
-
-    if (!isMissingImport) { continue; }
-
-    const match = diag.message.match(/["']([a-zA-Z0-9_.-]+)['"]/);
-    if (!match?.[1]) { continue; }
-
-    let packageName = match[1];
-
-    // Filter out incomplete/single-character package names to prevent false positives while typing
-    // Only process package names with at least 2 characters and that don't look like partial input
-    if (packageName.length < 2 || /^[a-z]$/.test(packageName)) { continue; }
-
-    let lang = issueLanguageFromDiagnostic(diag);
-    if (!lang) {
-      const ext = vscode.window.activeTextEditor?.document.uri.fsPath.split('.').pop();
-      if (ext === 'py') { lang = 'python'; }
-      else if (['js', 'ts', 'jsx', 'tsx'].includes(ext ?? '')) { lang = 'nodejs'; }
-    }
-    if (!lang) { continue; }
-
-    // Map common import names to correct PyPI package names
-    if (lang === 'python') {
-      const packageMap: Record<string, string> = {
-        'cv2': 'opencv-python',
-        'sklearn': 'scikit-learn',
-        'bs4': 'beautifulsoup4',
-        'PIL': 'Pillow',
-        'yaml': 'PyYAML',
-        'dotenv': 'python-dotenv'
+  
+      const isMissingImport = isPylanceMissing || (
+        msg.includes('import') &&
+        (msg.includes('could not be resolved') || msg.includes('no module') || msg.includes('cannot find'))
+      );
+  
+      if (!isMissingImport) { continue; }
+  
+      const match = diag.message.match(/["']([a-zA-Z0-9_.-]+)['"]/);
+      if (!match?.[1]) { continue; }
+  
+      let packageName = match[1];
+  
+      // Filter out incomplete/single-character package names to prevent false positives while typing
+      // Only process package names with at least 2 characters and that don't look like partial input
+      if (packageName.length < 2 || /^[a-z]$/.test(packageName)) { continue; }
+  
+      let lang = issueLanguageFromDiagnostic(diag);
+      if (!lang) {
+        const ext = vscode.window.activeTextEditor?.document.uri.fsPath.split('.').pop();
+        if (ext === 'py') { lang = 'python'; }
+        else if (['js', 'ts', 'jsx', 'tsx'].includes(ext ?? '')) { lang = 'nodejs'; }
+      }
+      if (!lang) { continue; }
+  
+      // Map common import names to correct PyPI package names
+      if (lang === 'python') {
+        const packageMap: Record<string, string> = {
+          'cv2': 'opencv-python',
+          'sklearn': 'scikit-learn',
+          'bs4': 'beautifulsoup4',
+          'PIL': 'Pillow',
+          'yaml': 'PyYAML',
+          'dotenv': 'python-dotenv'
+        };
+        if (packageMap[packageName]) {
+          packageName = packageMap[packageName];
+        }
+      }
+  
+      // Prevent rapid notification spam for the same package
+      const issueKey = `${lang}:${packageName}`;
+      if (recentlyProcessedDiagnostics.has(issueKey)) { continue; }
+      recentlyProcessedDiagnostics.add(issueKey);
+      setTimeout(() => recentlyProcessedDiagnostics.delete(issueKey), 30000);
+  
+      const issue: DependencyIssue = {
+        id: `${Date.now()}-${packageName}`,
+        type: IssueType.MissingDependency,
+        language: lang === 'python' ? SupportedLanguage.Python : SupportedLanguage.NodeJS,
+        packageName,
+        originalError: diag.message,
+        explanation: `The import "${packageName}" could not be resolved. The package is likely missing from your environment.`,
+        severity: IssueSeverity.High,
+        confidence: 80,
+        suggestedCommand: lang === 'python' ? `pip install ${packageName}` : `npm install ${packageName}`,
+        timestamp: Date.now(),
       };
-      if (packageMap[packageName]) {
-        packageName = packageMap[packageName];
-      }
+  
+      activityTracker.logErrorDetected('Missing Import', packageName);
+      void handleDependencyIssue(issue);
     }
-
-    // Prevent rapid notification spam for the same package
-    const issueKey = `${lang}:${packageName}`;
-    if (recentlyProcessedDiagnostics.has(issueKey)) { continue; }
-    recentlyProcessedDiagnostics.add(issueKey);
-    setTimeout(() => recentlyProcessedDiagnostics.delete(issueKey), 30000);
-
-    const issue: DependencyIssue = {
-      id: `${Date.now()}-${packageName}`,
-      type: IssueType.MissingDependency,
-      language: lang === 'python' ? SupportedLanguage.Python : SupportedLanguage.NodeJS,
-      packageName,
-      originalError: diag.message,
-      explanation: `The import "${packageName}" could not be resolved. The package is likely missing from your environment.`,
-      severity: IssueSeverity.High,
-      confidence: 80,
-      suggestedCommand: lang === 'python' ? `pip install ${packageName}` : `npm install ${packageName}`,
-      timestamp: Date.now(),
-    };
-
-    activityTracker.logErrorDetected('Missing Import', packageName);
-    void handleDependencyIssue(issue);
+  } catch (error) {
+    console.error('[Dependify] Non-blocking error in diagnostic processing:', error);
   }
 }
 
