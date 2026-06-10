@@ -121,7 +121,7 @@ export class EnvironmentDoctor {
             id: 'python-version-old',
             category: 'python',
             severity: 'warning',
-            title: '❌ Python Version Outdated',
+            title: 'Python Version Outdated',
             description: `Python ${versionMatch[1]} is outdated. Modern packages require Python 3.8+.`,
             currentValue: versionMatch[1],
             expectedValue: '3.11+',
@@ -136,7 +136,7 @@ export class EnvironmentDoctor {
         id: 'python-not-found',
         category: 'python',
         severity: 'error',
-        title: '❌ Python Not Found',
+        title: 'Python Not Found',
         description: 'Python is not installed or not in PATH.',
         suggestedFix: 'Install Python 3.11+ from python.org or your package manager.',
         fixCommand: 'python --version',
@@ -165,7 +165,7 @@ export class EnvironmentDoctor {
             id: 'node-version-old',
             category: 'node',
             severity: 'warning',
-            title: '⚠️ Node.js Version Outdated',
+            title: 'Node.js Version Outdated',
             description: `Node.js ${versionMatch[1]} is older than LTS. Update to 20+.`,
             currentValue: versionMatch[1],
             expectedValue: '20+',
@@ -208,7 +208,7 @@ export class EnvironmentDoctor {
             id: 'venv-not-active',
             category: 'venv',
             severity: 'warning',
-            title: '⚠️ Virtual Environment Not Activated',
+            title: 'Virtual Environment Not Activated',
             description: `Virtual environment exists at ${venvPath} but is not active.`,
             suggestedFix: `Activate the environment: ${activateScript}`,
           };
@@ -224,7 +224,7 @@ export class EnvironmentDoctor {
         id: 'venv-missing',
         category: 'venv',
         severity: 'warning',
-        title: '⚠️ No Virtual Environment',
+        title: 'No Virtual Environment',
         description: 'No virtual environment found in workspace.',
         suggestedFix: 'Create one with: python -m venv .venv',
         fixCommand: 'python -m venv .venv',
@@ -251,7 +251,7 @@ export class EnvironmentDoctor {
             id: 'interpreter-invalid',
             category: 'interpreter',
             severity: 'error',
-            title: '❌ Invalid Interpreter Path',
+            title: 'Invalid Interpreter Path',
             description: `Selected Python interpreter not found: ${pythonPath}`,
             suggestedFix: 'Select a valid Python interpreter in VS Code settings.',
           };
@@ -267,7 +267,7 @@ export class EnvironmentDoctor {
           id: 'interpreter-not-selected',
           category: 'interpreter',
           severity: 'warning',
-          title: '⚠️ No Python Interpreter Selected',
+          title: 'No Python Interpreter Selected',
           description: 'No default Python interpreter is configured.',
           suggestedFix: 'Select a Python interpreter: Cmd+Shift+P → Python: Select Interpreter',
         };
@@ -304,7 +304,7 @@ export class EnvironmentDoctor {
           id: 'python-not-in-path',
           category: 'path',
           severity: 'warning',
-          title: '⚠️ Python Not in PATH',
+          title: 'Python Not in PATH',
           description: 'Python is installed but not accessible from command line.',
           suggestedFix: 'Add Python installation directory to your system PATH.',
         };
@@ -323,7 +323,7 @@ export class EnvironmentDoctor {
         id: 'missing-env-vars',
         category: 'variables',
         severity: 'info',
-        title: 'ℹ️ Missing Environment Variables',
+        title: 'Missing Environment Variables',
         description: `Missing: ${missingVars.join(', ')}`,
         suggestedFix: 'These variables may be needed for certain tools.',
       };
@@ -340,11 +340,11 @@ export class EnvironmentDoctor {
     const warningCount = report.issues.filter(i => i.severity === 'warning').length;
 
     if (errorCount > 0) {
-      return `🔴 Environment has ${errorCount} critical issue(s) and ${warningCount} warning(s). Your project may not work correctly.`;
+      return `Critical: Environment has ${errorCount} critical issue(s) and ${warningCount} warning(s). Your project may not work correctly.`;
     }
     if (warningCount > 0) {
-      return `🟡 Environment has ${warningCount} warning(s). Consider updating your setup.`;
+      return `Warning: Environment has ${warningCount} warning(s). Consider updating your setup.`;
     }
-    return '🟢 Environment is healthy! All checks passed.';
+    return 'Healthy: Environment is healthy! All checks passed.';
   }
 }

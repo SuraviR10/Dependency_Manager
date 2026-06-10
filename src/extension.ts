@@ -64,7 +64,7 @@ let workspaceDashboard: WorkspaceDashboard;
 let scanTimeout: NodeJS.Timeout | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
-  console.log("[📦 Dependify] Activation Started");
+  console.log("[Dependify] Activation Started");
 
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
 
@@ -73,20 +73,20 @@ export function activate(context: vscode.ExtensionContext): void {
   activityTracker    = new ActivityTracker();
   notificationManager = new NotificationManager(context);
   notificationManager.setNotificationLevel(settingsManager.notificationLevel);
-  console.log("[📦 Dependify] Core Services Initialized");
+  console.log("[Dependify] Core Services Initialized");
 
   // Security layer
   executor           = new SafeCommandExecutor(activityTracker);
   packageValidator   = new PackageValidator();
   snapshotManager    = new SnapshotManager(workspacePath);
   conflictDetector   = new ConflictDetector(workspacePath);
-  console.log("[📦 Dependify] Security Layer Initialized");
+  console.log("[Dependify] Security Layer Initialized");
 
   // Analysis
   errorAnalyzer      = new ErrorAnalyzer(workspacePath);
   dependencyScanner  = new DependencyScanner(workspacePath);
   commandGenerator   = new InstallCommandGenerator();
-  console.log("[📦 Dependify] Scanner Initialized");
+  console.log("[Dependify] Scanner Initialized");
 
   // New Feature Services
   environmentDoctor  = new EnvironmentDoctor(workspacePath);
@@ -96,17 +96,17 @@ export function activate(context: vscode.ExtensionContext): void {
   teamEnvironmentSharing = new TeamEnvironmentSharing(workspacePath);
   enhancedConflictResolver = new EnhancedConflictResolver(workspacePath);
   workspaceDashboard = new WorkspaceDashboard(workspacePath, dependencyScanner);
-  console.log("[📦 Dependify] Feature Services Initialized");
+  console.log("[Dependify] Feature Services Initialized");
 
   // Commands & environment
   commandRegistry    = new CommandRegistry(context, commandGenerator, executor);
   environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context, settingsManager, executor);
-  console.log("[📦 Dependify] Environment Manager Initialized");
+  console.log("[Dependify] Environment Manager Initialized");
 
   // UI
   webviewProvider       = new WebviewProvider(context, commandGenerator);
   activityPanelProvider = new ActivityPanelProvider(context, activityTracker);
-  console.log("[📦 Dependify] Dashboard Ready");
+  console.log("[Dependify] Dashboard Ready");
 
   // Install queue (uses executor for safety)
   installQueue = new InstallQueue(
@@ -152,11 +152,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
   activityTracker.logActivity(
     ActivityType.ScanCompleted, ActivitySeverity.Info,
-    '📦🚀 Dependify Ready',
+    'Dependify Ready',
     { description: 'Extension initialized and monitoring for dependency issues' }
   );
 
-  console.log("[📦 Dependify] Activation Completed");
+  console.log("[Dependify] Activation Completed");
 }
 
 // ─── Health Dashboard ─────────────────────────────────────────────────────────
@@ -426,7 +426,7 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
 
   webviewProvider.displayIssue(issue);
   activityTracker.logErrorDetected('Dependency Issue', issue.packageName);
-  notificationManager.showStatusMessage(`📦 Dependify: Detected missing package "${issue.packageName}"`, 4500);
+  notificationManager.showStatusMessage(`Dependify: Detected missing package "${issue.packageName}"`, 4500);
 
   if (!settingsManager.shouldAutoInstall()) {
     notificationManager.showInfo(
@@ -440,7 +440,7 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
     const validation = await packageValidator.verify(issue.packageName, issue.language);
     if (!validation.exists) {
       void vscode.window.showWarningMessage(
-        `📦 Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
+        `Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
       );
       return;
     }
@@ -520,7 +520,7 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
       if (!validation.exists) {
         webviewProvider.updateInstallationStatus('error', `Package "${issue.packageName}" not found in registry`);
         void vscode.window.showWarningMessage(
-          `📦 Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
+          `Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
         );
         return;
       }
@@ -568,7 +568,7 @@ async function handleRepairCommand(): Promise<void> {
   const plan = await environmentManager.createRepairPlan();
   activityTracker.logActivity(
     ActivityType.EnvironmentModified, ActivitySeverity.Info,
-    '🔧 Environment Repair Initiated',
+    'Environment Repair Initiated',
     { description: 'Repair plan generated for project environment' }
   );
   void vscode.window.showInformationMessage(plan, { modal: false });
@@ -614,7 +614,7 @@ async function handleCleanupCommand(): Promise<void> {
 // ─── New Feature Handlers ─────────────────────────────────────────────────────
 
 async function handleEnvironmentDoctorCommand(): Promise<void> {
-  notificationManager.showStatusMessage('🔍 Running Environment Doctor...', 3000);
+  notificationManager.showStatusMessage('Running Environment Doctor...', 3000);
   
   try {
     const report = await environmentDoctor.diagnose();
@@ -622,43 +622,43 @@ async function handleEnvironmentDoctorCommand(): Promise<void> {
     output.clear();
     output.show();
 
-    output.appendLine('═══════════════════════════════════════════════════');
-    output.appendLine('📋 ENVIRONMENT DOCTOR REPORT');
-    output.appendLine('═══════════════════════════════════════════════════\n');
+    output.appendLine('---------------------------------------------------');
+    output.appendLine('ENVIRONMENT DOCTOR REPORT');
+    output.appendLine('---------------------------------------------------\n');
     output.appendLine(`Health Score: ${report.healthScore}/100`);
     output.appendLine(`Summary: ${report.summary}\n`);
 
     // Python
     if (report.python.installed) {
-      output.appendLine(`✅ Python ${report.python.version} installed`);
+      output.appendLine(`[OK] Python ${report.python.version} installed`);
     } else {
-      output.appendLine('❌ Python not installed');
+      output.appendLine(`[ERROR] Python not installed`);
     }
 
     // Node.js
     if (report.node.installed) {
-      output.appendLine(`✅ Node.js ${report.node.version} installed`);
+      output.appendLine(`[OK] Node.js ${report.node.version} installed`);
     }
 
     // Virtual Environment
     if (report.venv.exists) {
-      output.appendLine(`✅ Virtual environment found: ${report.venv.path}`);
+      output.appendLine(`[OK] Virtual environment found: ${report.venv.path}`);
       output.appendLine(`   Status: ${report.venv.active ? 'ACTIVE' : 'INACTIVE'}`);
     } else {
-      output.appendLine('⚠️ No virtual environment found');
+      output.appendLine(`[WARNING] No virtual environment found`);
     }
 
     // Interpreter
     if (report.interpreter.correct) {
-      output.appendLine(`✅ Python interpreter configured: ${report.interpreter.selected}`);
+      output.appendLine(`[OK] Python interpreter configured: ${report.interpreter.selected}`);
     } else {
-      output.appendLine('❌ Python interpreter not configured or invalid');
+      output.appendLine(`[ERROR] Python interpreter not configured or invalid`);
     }
 
     // Issues
     if (report.issues.length > 0) {
-      output.appendLine('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-      output.appendLine('⚠️ DETECTED ISSUES:\n');
+      output.appendLine('\n-----------------------------------------------\n');
+      output.appendLine('DETECTED ISSUES:\n');
       
       for (const issue of report.issues) {
         output.appendLine(`[${issue.severity.toUpperCase()}] ${issue.title}`);
@@ -669,12 +669,12 @@ async function handleEnvironmentDoctorCommand(): Promise<void> {
         output.appendLine('');
       }
     } else {
-      output.appendLine('\n✅ No issues detected!');
+      output.appendLine('\n[OK] No issues detected!');
     }
 
     activityTracker.logActivity(
       ActivityType.EnvironmentChecked, ActivitySeverity.Info,
-      '✅ Environment Doctor Completed',
+      'Environment Doctor Completed',
       { description: `Health score: ${report.healthScore}/100, Issues: ${report.issues.length}` }
     );
   } catch (error) {
@@ -683,7 +683,7 @@ async function handleEnvironmentDoctorCommand(): Promise<void> {
 }
 
 async function handleProjectSetupCommand(): Promise<void> {
-  notificationManager.showStatusMessage('🔍 Analyzing project...', 3000);
+  notificationManager.showStatusMessage('Analyzing project...', 3000);
 
   try {
     const projectInfo = await projectSetupWizard.analyzeProject();
@@ -701,12 +701,12 @@ async function handleProjectSetupCommand(): Promise<void> {
     );
 
     if (proceed === 'Yes') {
-      notificationManager.showStatusMessage('⚙️ Starting project setup...', 2000);
+      notificationManager.showStatusMessage('Starting project setup...', 2000);
       const results = await projectSetupWizard.executeSetup(projectInfo);
       
       activityTracker.logActivity(
         ActivityType.ProjectSetup, ActivitySeverity.Info,
-        '✅ Project Setup Completed',
+        'Project Setup Completed',
         { description: `Completed ${results.length} setup steps` }
       );
     }
@@ -716,7 +716,7 @@ async function handleProjectSetupCommand(): Promise<void> {
 }
 
 async function handleDependencySyncCommand(): Promise<void> {
-  notificationManager.showStatusMessage('🔄 Syncing dependencies...', 2000);
+  notificationManager.showStatusMessage('Syncing dependencies...', 2000);
 
   try {
     const [pythonResult, nodeResult] = await Promise.all([
@@ -728,25 +728,25 @@ async function handleDependencySyncCommand(): Promise<void> {
     output.clear();
     output.show();
 
-    output.appendLine('═══════════════════════════════════════════════════');
-    output.appendLine('📦 DEPENDENCY SYNC REPORT');
-    output.appendLine('═══════════════════════════════════════════════════\n');
+    output.appendLine('---------------------------------------------------');
+    output.appendLine('DEPENDENCY SYNC REPORT');
+    output.appendLine('---------------------------------------------------\n');
 
     output.appendLine(`Python: ${pythonResult.summary}`);
     output.appendLine(`Node.js: ${nodeResult.summary}`);
 
     if (pythonResult.errors.length > 0 || nodeResult.errors.length > 0) {
-      output.appendLine('\n⚠️ Errors:');
+      output.appendLine('\nWarnings/Errors:');
       [...pythonResult.errors, ...nodeResult.errors].forEach(e => output.appendLine(`  - ${e}`));
     }
 
     activityTracker.logActivity(
       ActivityType.DependenciesSynced, ActivitySeverity.Info,
-      '✅ Dependencies Synced',
+      'Dependencies Synced',
       { description: 'Installed packages synchronized with manifest files' }
     );
 
-    vscode.window.showInformationMessage('✅ Dependencies synced successfully!');
+    vscode.window.showInformationMessage('Dependencies synced successfully!');
   } catch (error) {
     vscode.window.showErrorMessage(`Dependency sync failed: ${error}`);
   }
@@ -765,16 +765,16 @@ async function handleExportEnvironmentCommand(): Promise<void> {
   });
 
   try {
-    notificationManager.showStatusMessage('📸 Exporting environment...', 2000);
+    notificationManager.showStatusMessage('Exporting environment...', 2000);
     const snapshot = await teamEnvironmentSharing.exportEnvironment(name, description);
     
     vscode.window.showInformationMessage(
-      `✅ Environment exported: ${snapshot.id}. You can share the .dependify-snapshots folder with your team.`
+      `Environment exported: ${snapshot.id}. You can share the .dependify-snapshots folder with your team.`
     );
 
     activityTracker.logActivity(
       ActivityType.EnvironmentExported, ActivitySeverity.Info,
-      '📸 Environment Snapshot Created',
+      'Environment Snapshot Created',
       { description: `Snapshot: ${name}` }
     );
   } catch (error) {
@@ -792,7 +792,7 @@ async function handleShowDashboardCommand(): Promise<void> {
 
     const panel = vscode.window.createWebviewPanel(
       'dependifyDashboard',
-      '📊 Dependency Dashboard',
+      'Dependency Dashboard',
       vscode.ViewColumn.One,
       { enableScripts: true }
     );
@@ -801,7 +801,7 @@ async function handleShowDashboardCommand(): Promise<void> {
 
     activityTracker.logActivity(
       ActivityType.DashboardViewed, ActivitySeverity.Info,
-      '📊 Dashboard Viewed',
+      'Dashboard Viewed',
       { description: `Health Score: ${dashboard.overallScore}/100` }
     );
   } catch (error) {

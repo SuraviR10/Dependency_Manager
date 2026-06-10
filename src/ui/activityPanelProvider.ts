@@ -118,10 +118,10 @@ export class ActivityPanelProvider implements vscode.WebviewViewProvider {
   <title>Dependency Activity</title>
   <style nonce="${nonce}">
     :root {
-      --success-color: #10b981;
-      --warning-color: #f59e0b;
-      --error-color: #ef4444;
-      --info-color: #3b82f6;
+      --success-color: var(--vscode-testing-iconPassed, #10b981);
+      --warning-color: var(--vscode-editorWarning-foreground, #f59e0b);
+      --error-color: var(--vscode-editorError-foreground, #ef4444);
+      --info-color: var(--vscode-textLink-foreground, #3b82f6);
       --bg-secondary: var(--vscode-editor-lineHighlightBackground, #2d2d2d);
       --text-primary: var(--vscode-foreground, #e0e0e0);
       --text-secondary: var(--vscode-descriptionForeground, #a0a0a0);

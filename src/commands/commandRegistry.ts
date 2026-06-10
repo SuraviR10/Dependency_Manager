@@ -115,10 +115,10 @@ export class CommandRegistry {
     const alternatives = this.commandGenerator.getAlternativeCommands(issue);
 
     const items: vscode.QuickPickItem[] = [
-      { label: '$(play) Install', description: command.commandDisplay, detail: 'Run in Dependify terminal' },
-      { label: '$(clippy) Copy Command', description: command.commandDisplay, detail: 'Copy to clipboard' },
+      { label: '$(cloud-download) Install', description: command.commandDisplay, detail: 'Run in Dependify terminal' },
+      { label: '$(copy) Copy Command', description: command.commandDisplay, detail: 'Copy to clipboard' },
       ...alternatives.map((alt, i) => ({
-        label: `$(symbol-misc) Alternative ${i + 1}`,
+        label: `$(lightbulb) Alternative ${i + 1}`,
         description: alt,
         detail: 'Alternative installation method',
       })),

@@ -371,9 +371,9 @@ export class WorkspaceDashboard {
       --border-color: var(--vscode-widget-border);
       --primary: var(--vscode-button-background);
       --primary-hover: var(--vscode-button-hoverBackground);
-      --success: #3fb950;
-      --warning: #d83b01;
-      --error: #e81123;
+      --success: var(--vscode-testing-iconPassed, #3fb950);
+      --warning: var(--vscode-editorWarning-foreground, #d83b01);
+      --error: var(--vscode-editorError-foreground, #e81123);
     }
     
     body { 

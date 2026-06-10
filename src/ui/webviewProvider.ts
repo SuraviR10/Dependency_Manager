@@ -209,7 +209,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     const nonce = this.getNonce();
     const languageList = summary.languages.map(l => this.getLanguageDisplayName(l)).join(', ') || 'Unknown';
     const score = summary.healthScore;
-    const scoreColor = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+    const scoreColor = score >= 80 ? 'var(--vscode-testing-iconPassed, #10b981)' : score >= 50 ? 'var(--vscode-editorWarning-foreground, #f59e0b)' : 'var(--vscode-editorError-foreground, #ef4444)';
     const scoreLabel = score >= 80 ? 'Healthy' : score >= 50 ? 'Warning' : 'Critical';
 
     const missingHtml = summary.missingPackages.length > 0
@@ -343,10 +343,10 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     const confidenceBar = this.getConfidenceBarHtml(issue.confidence);
 
     const severityColor = {
-      critical: '#f48771',
-      high: '#ff7043',
-      medium: '#ffb74d',
-      low: '#81c784',
+      critical: 'var(--vscode-editorError-foreground, #f48771)',
+      high: 'var(--vscode-editorWarning-foreground, #ff7043)',
+      medium: 'var(--vscode-editorInfo-foreground, #ffb74d)',
+      low: 'var(--vscode-testing-iconPassed, #81c784)',
     }[issue.severity];
 
     return `
@@ -506,7 +506,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
    */
   private getConfidenceBarHtml(confidence: number): string {
     const percentage = Math.min(100, Math.max(0, confidence));
-    const color = percentage >= 80 ? '#4caf50' : percentage >= 60 ? '#ff9800' : '#f44336';
+    const color = percentage >= 80 ? 'var(--vscode-testing-iconPassed, #4caf50)' : percentage >= 60 ? 'var(--vscode-editorWarning-foreground, #ff9800)' : 'var(--vscode-editorError-foreground, #f44336)';
 
     return `
       <div class="confidence-bar-container">
@@ -527,17 +527,17 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
   private getRawStyles(): string {
     return `
         :root {
-          /* Professional Dark Blue Palette */
-          --dartx-bg: #090c10;
-          --dartx-card-bg: rgba(22, 27, 34, 0.6);
-          --dartx-border: rgba(48, 54, 61, 0.8);
-          --dartx-accent-blue: #2f81f7;
-          --dartx-accent-hover: #388bfd;
-          --dartx-text-main: #c9d1d9;
-          --dartx-text-muted: #8b949e;
-          --dartx-success: #3fb950;
-          --dartx-warning: #d29922;
-          --dartx-error: #ff7b72;
+          /* VS Code Standard Theme Variables */
+          --dartx-bg: var(--vscode-editor-background);
+          --dartx-card-bg: var(--vscode-editorWidget-background, rgba(22, 27, 34, 0.6));
+          --dartx-border: var(--vscode-widget-border, rgba(48, 54, 61, 0.8));
+          --dartx-accent-blue: var(--vscode-button-background, #2f81f7);
+          --dartx-accent-hover: var(--vscode-button-hoverBackground, #388bfd);
+          --dartx-text-main: var(--vscode-editor-foreground, #c9d1d9);
+          --dartx-text-muted: var(--vscode-descriptionForeground, #8b949e);
+          --dartx-success: var(--vscode-testing-iconPassed, #3fb950);
+          --dartx-warning: var(--vscode-editorWarning-foreground, #d29922);
+          --dartx-error: var(--vscode-editorError-foreground, #ff7b72);
         }
 
         * {
@@ -671,7 +671,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         .error-text {
           display: block;
-          background-color: #0d1117;
+          background-color: var(--vscode-input-background, #0d1117);
           padding: 8px;
           border-radius: 3px;
           font-size: 11px;
@@ -695,7 +695,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         .command-display code {
           flex: 1;
-          background-color: rgba(13, 17, 23, 0.8);
+          background-color: var(--vscode-input-background, rgba(13, 17, 23, 0.8));
           padding: 8px 12px;
           border-radius: 6px;
           font-size: 12px;
@@ -753,7 +753,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .status.idle {
-          background-color: #0d1117;
+          background-color: var(--vscode-editorWidget-background, #0d1117);
           color: var(--dartx-text-muted);
           border: 1px solid var(--dartx-border);
         }
@@ -833,9 +833,9 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .btn-primary {
-          background: linear-gradient(180deg, var(--dartx-accent-blue) 0%, #1f6feb 100%);
-          color: #ffffff;
-          border: 1px solid #388bfd;
+          background: var(--dartx-accent-blue);
+          color: var(--vscode-button-foreground, #ffffff);
+          border: 1px solid var(--dartx-accent-hover);
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
