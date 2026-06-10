@@ -114,7 +114,7 @@ export class ProjectSetupWizard {
    */
   public async executeSetup(projectInfo: ProjectInfo): Promise<string[]> {
     const results: string[] = [];
-    const output = vscode.window.createOutputChannel('Dependify Setup');
+    const output = vscode.window.createOutputChannel('DARTX Setup');
     output.show();
 
     try {

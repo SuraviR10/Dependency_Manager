@@ -1,5 +1,5 @@
 /**
- * Dependify – Smart Dependency & Environment Manager
+ * DARTX – Smart Dependency & Environment Manager
  * Main extension entry point
  */
 
@@ -27,10 +27,6 @@ import { PackageRecommender } from './services/packageRecommender';
 import { TeamEnvironmentSharing } from './services/teamEnvironmentSharing';
 import { EnhancedConflictResolver } from './services/enhancedConflictResolver';
 import { WorkspaceDashboard } from './services/workspaceDashboard';
-import {
-  DependencyIssue, SupportedLanguage, IssueType, IssueSeverity,
-  ActivityType, ActivitySeverity,
-} from './types/types';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -38,6 +34,10 @@ import * as cp from 'child_process';
 import * as util from 'util';
 
 // Module-level singletons
+import {
+  DependencyIssue, SupportedLanguage, IssueType, IssueSeverity,
+  ActivityType, ActivitySeverity,
+} from './types/types';
 let extensionContext: vscode.ExtensionContext;
 let errorAnalyzer: ErrorAnalyzer;
 let dependencyScanner: DependencyScanner;
@@ -67,7 +67,7 @@ let scanTimeout: NodeJS.Timeout | undefined;
 export function activate(context: vscode.ExtensionContext): void {
   console.log("[DARTX] Activation Started");
   extensionContext = context;
-
+  
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
 
   // Core services
@@ -90,12 +90,14 @@ export function activate(context: vscode.ExtensionContext): void {
   commandGenerator   = new InstallCommandGenerator();
   console.log("[DARTX] Scanner Initialized");
 
-  // Commands & environment
+  // Commands & Environment
   commandRegistry    = new CommandRegistry(context, commandGenerator, executor);
   environmentManager = new EnvironmentManager(workspacePath, commandGenerator, context, settingsManager, executor);
-  console.log("[Dependify] Environment Manager Initialized");
+  console.log("[DARTX] Environment Manager Initialized");
 
   // UI
+  // Note: These are WebviewViewProviders, which are not truly "lazy" as VS Code might activate them on UI redraw,
+  // but their content loading can be lazy.
   webviewProvider       = new WebviewProvider(context, commandGenerator);
   activityPanelProvider = new ActivityPanelProvider(context, activityTracker);
   console.log("[DARTX] Dashboard Ready");
@@ -144,7 +146,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   activityTracker.logActivity(
     ActivityType.ScanCompleted, ActivitySeverity.Info,
-    'DARTX Ready',
+    'Extension Ready',
     { description: 'Extension initialized and monitoring for dependency issues' }
   );
 
@@ -394,12 +396,6 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
   if (!issue?.packageName) { return; }
 
   // Security: validate package name before doing anything
-  const nameError = executor.validatePackageName(issue.packageName);
-  if (nameError) {
-    notificationManager.appendLog(`[Security] Rejected invalid package name: ${issue.packageName}`);
-    return;
-  }
-
   // Feature: Memory of previous fixes. Check if we have a known good fix.
   const fixHistory = extensionContext.globalState.get<Record<string, string>>('dartx.fixHistory', {});
   const issueKey = `${issue.language}:${issue.packageName}`;
@@ -412,20 +408,8 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
   let generatedCmd = commandGenerator.generateCommand(issue).command;
   issue.suggestedCommand = generatedCmd;
 
-  // Improvement: Verify package exists before notifying user to improve accuracy and prevent typosquatting.
-  if (settingsManager.verifyPackagesBeforeInstall) {
-    const validation = await packageValidator.verify(issue.packageName, issue.language);
-    if (!validation.exists) {
-      notificationManager.appendLog(
-        `[Accuracy] Ignored non-existent package suggestion: "${issue.packageName}".`
-      );
-      return; // Silently drop the issue, preventing a false-positive notification.
-    }
-    // If package is real, boost confidence.
-    issue.confidence = Math.min(100, (issue.confidence || 80) + 15);
-  }
-
   // Improvement: Removed external AI call for explanations to improve performance and reliability.
+  // Keep local explanations from errorAnalyzer.ts or provide a simple default.
   // try {
   //   const models = await vscode.lm.selectChatModels({ family: 'gpt-4' });
   //   ...
@@ -433,14 +417,13 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
   //   // Fallback to local regex explanation
   // }
 
-  activityTracker.logErrorDetected('Dependency Issue', issue.packageName);
+  activityTracker.logErrorDetected('Missing Dependency', issue.packageName);
 
   // UX Change: Silent-first design. Use notifications, not automatic panel opening.
   const hasBeenPrompted = extensionContext.globalState.get('dartx.promptedForAutoInstall', false);
 
-  // 1. Auto-install if enabled and confidence is high (e.g., >95)
-  if (settingsManager.shouldAutoInstall() && issue.confidence > 95) {
-    notificationManager.showStatusMessage(`DARTX: Auto-installing ${issue.packageName}...`, 3000);
+  // 1. Auto-install silently if enabled and confidence is high
+  if (settingsManager.shouldAutoInstall() && issue.confidence >= 80) {
     await performAutoInstall(issue);
     return;
   }
@@ -484,7 +467,8 @@ async function performAutoInstall(issue: DependencyIssue): Promise<void> {
 
 async function performManualInstall(issue: DependencyIssue): Promise<void> {
   const canInstall = !settingsManager.shouldConfirmBeforeInstall() || await commandRegistry.showInstallConfirmation(issue);
-  if (canInstall) {
+  if (canInstall) { // User confirmed, now enqueue for installation
+    // The InstallQueue will handle validation, snapshotting, and execution
     installQueue.enqueue(issue, issue.suggestedCommand);
   }
 }
@@ -538,6 +522,21 @@ function setupCommandHandlers(_context: vscode.ExtensionContext): void {
         if (active) {
           void processTerminalOutput(terminalMonitor.getTerminalOutput(active));
         }
+      }),
+      // Placeholder handlers for future features or until they are fully implemented
+      vscode.commands.registerCommand('dartx.impactAnalysis', () => {
+        notificationManager.showInfo('DARTX: Impact Analysis feature is not yet implemented.');
+      }),
+      vscode.commands.registerCommand('dartx.upgradeAdvisor', () => {
+        notificationManager.showInfo('DARTX: Smart Upgrade Advisor feature is not yet implemented.');
+      }),
+      vscode.commands.registerCommand('dartx.knowledgeGraph', () => {
+        notificationManager.showInfo('DARTX: Dependency Knowledge Graph feature is not yet implemented.');
+      }),
+      vscode.commands.registerCommand('dartx.openPanel', () => {
+        if (webviewProvider) {
+          vscode.commands.executeCommand('workbench.view.extension.dartx'); // Opens the DARTX activity bar view
+        }
       })
   );
 }
@@ -546,6 +545,7 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
   webviewProvider.updateInstallationStatus('installing');
   notificationManager.showInstallationStarted(issue.packageName);
 
+  // The Installation Queue already handles pre-install validation, snapshotting
   try {
     const envStatus = await environmentManager.checkAndPromptEnvironment(issue.language);
     if (envStatus === 'cancel') {
@@ -678,9 +678,9 @@ async function handleEnvironmentDoctorCommand(): Promise<void> {
     output.clear();
     output.show();
 
-    output.appendLine('---------------------------------------------------');
-    output.appendLine('ENVIRONMENT DOCTOR REPORT');
-    output.appendLine('---------------------------------------------------\n');
+    output.appendLine('===================================================');
+    output.appendLine(' 🩺 DARTX ENVIRONMENT DOCTOR REPORT');
+    output.appendLine('===================================================\n');
     output.appendLine(`Health Score: ${report.healthScore}/100`);
     output.appendLine(`Summary: ${report.summary}\n`);
 
@@ -713,7 +713,7 @@ async function handleEnvironmentDoctorCommand(): Promise<void> {
 
     // Issues
     if (report.issues.length > 0) {
-      output.appendLine('\n-----------------------------------------------\n');
+      output.appendLine('\n===================================================\n');
       output.appendLine('DETECTED ISSUES:\n');
       
       for (const issue of report.issues) {
@@ -796,9 +796,9 @@ async function handleDependencySyncCommand(): Promise<void> {
     output.clear();
     output.show();
 
-    output.appendLine('---------------------------------------------------');
-    output.appendLine('DEPENDENCY SYNC REPORT');
-    output.appendLine('---------------------------------------------------\n');
+    output.appendLine('===================================================');
+    output.appendLine(' 🔄 DARTX DEPENDENCY SYNC REPORT');
+    output.appendLine('===================================================\n');
 
     output.appendLine(`Python: ${pythonResult.summary}`);
     output.appendLine(`Node.js: ${nodeResult.summary}`);
@@ -843,7 +843,7 @@ async function handleExportEnvironmentCommand(): Promise<void> {
     const snapshot = await teamEnvironmentSharing.exportEnvironment(name, description);
     
     notificationManager.showInfo(
-      `Environment exported: ${snapshot.id}. You can share the .dependify-snapshots folder with your team.`
+      `Environment exported: ${snapshot.id}. You can share the .dartx-snapshots folder with your team.`
     );
 
     activityTracker.logActivity(

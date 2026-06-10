@@ -2,7 +2,7 @@
   "name": "dartx",
   "displayName": "DARTX",
   "description": "DARTX automatically detects and resolves dependency issues before they slow down your development workflow.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "DependencyAssistant",
   "author": "Suravi R",
   "icon": "media/icon.png",
@@ -42,10 +42,6 @@
       {
         "command": "dartx.openPanel",
         "title": "DARTX: Open Assistant Panel"
-      },
-      {
-        "command": "dartx.dependencyDoctor",
-        "title": "DARTX: Run Dependency Doctor"
       },
       {
         "command": "dartx.refreshDependencies",
@@ -114,9 +110,6 @@
           "command": "dartx.openPanel"
         },
         {
-          "command": "dartx.dependencyDoctor"
-        },
-        {
           "command": "dartx.setupProject"
         },
         {
@@ -165,7 +158,7 @@
       "properties": {
         "dartx.autoInstall": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Automatically install missing dependencies when detected."
         },
         "dartx.confirmBeforeInstall": {

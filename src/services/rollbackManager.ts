@@ -53,7 +53,7 @@ export class RollbackManager {
       
       return true;
     } catch (error) {
-      console.error('DART Rollback failed:', error);
+      console.error('DARTX Rollback failed:', error);
       return false;
     }
   }

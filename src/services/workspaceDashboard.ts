@@ -214,9 +214,7 @@ export class WorkspaceDashboard {
     const recommendations: string[] = [];
 
     if (metrics.missingPackages > 0) {
-      recommendations.push(
-        `[Dependency Doctor] ${metrics.missingPackages} packages are imported in your code but not installed. Install them to prevent runtime crashes.`
-      );
+      recommendations.push(`[Dependency Doctor] ${metrics.missingPackages} packages are imported in your code but not installed. Install them to prevent runtime crashes.`);
     }
 
     if (metrics.unusedPackages > 0) {
@@ -236,11 +234,11 @@ export class WorkspaceDashboard {
     }
 
     if (metrics.projectHealth === 'critical') {
-      recommendations.push('Your project has critical issues. Run "DART: Repair Project Environment" to get started.');
+      recommendations.push('Your project has critical issues. Run "DARTX: Repair Project Environment" to get started.');
     } else if (metrics.projectHealth === 'warning') {
       recommendations.push('Consider addressing the warnings above to improve project stability.');
     } else {
-      recommendations.push('✅ DART Analysis: Your project dependencies look great!');
+      recommendations.push('✅ DARTX Analysis: Your project dependencies look great!');
     }
 
     // Add proactive recommendations
@@ -447,7 +445,7 @@ export class WorkspaceDashboard {
 <body>
   <div class="navbar">
     ${dartLogoSvg}
-    <h1>DART</h1>
+    <h1>DARTX</h1>
     <span class="tagline">Dependency Analysis & Resolution Toolkit</span>
   </div>
 

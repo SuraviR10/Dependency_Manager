@@ -35,7 +35,7 @@ export class TeamEnvironmentSharing {
 
   constructor(workspacePath: string) {
     this.workspacePath = workspacePath;
-    this.snapshotsDir = path.join(workspacePath, '.dependify-snapshots');
+    this.snapshotsDir = path.join(workspacePath, '.dartx-snapshots');
     this.ensureSnapshotsDir();
   }
 

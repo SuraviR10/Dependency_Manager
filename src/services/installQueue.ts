@@ -57,7 +57,7 @@ export class InstallQueue {
     this.attemptedPackages.add(packageKey);
     this.items.push({ issue, command });
     this.notificationManager.appendLog(`Queued install: ${issue.packageName}`);
-    this.notificationManager.showStatusMessage(`Dependify: Queued ${issue.packageName}`);
+    this.notificationManager.showStatusMessage(`DARTX: Queued ${issue.packageName}`);
     void this.processQueue();
   }
 
@@ -72,7 +72,7 @@ export class InstallQueue {
       if (!next) { continue; }
 
       const { issue, command } = next;
-      this.notificationManager.showStatusMessage(`Dependify: Installing ${issue.packageName}...`);
+      this.notificationManager.showStatusMessage(`DARTX: Installing ${issue.packageName}...`);
       this.notificationManager.appendLog(`Running install command: ${command}`);
 
       const success = await this.commandRegistry.executeInTerminal(command, issue.packageName, false);
@@ -89,7 +89,7 @@ export class InstallQueue {
     }
 
     this.processing = false;
-    this.notificationManager.showStatusMessage('Dependify: Installation queue empty', 3000);
+    this.notificationManager.showStatusMessage('DARTX: Installation queue empty', 3000);
   }
 
   public reset(): void {

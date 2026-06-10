@@ -107,7 +107,7 @@ export class EnvironmentManager {
       return 'exists';
     }
 
-    const choice = await vscode.window.showWarningMessage(`Dependify: ${message}`, ...options);
+    const choice = await vscode.window.showWarningMessage(`DARTX: ${message}`, ...options);
     
     if (choice === 'Create Environment') {
       await this.createVirtualEnvironment(path.join(this.workspacePath, '.venv'));

@@ -9,7 +9,13 @@
 </p>
 
 <p align="center">
-  DARTX is a smart, lightweight assistant that automatically detects and resolves dependency issues in Python and Node.js projects before they interrupt your workflow. It works silently in the background to save you time and prevent configuration headaches.
+  <b>DARTX</b> is a smart, lightweight assistant that automatically detects and resolves dependency issues in <b>Python</b> and <b>Node.js</b> projects before they interrupt your workflow. It works silently in the background to save you time and prevent configuration headaches.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/VS%20Code-1.85+-blue.svg?style=for-the-badge&logo=visual-studio-code" alt="VS Code Version"/>
+  <img src="https://img.shields.io/badge/Language-TypeScript-blue.svg?style=for-the-badge&logo=typescript" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License"/>
 </p>
 
 <p align="center">
@@ -19,57 +25,61 @@
 
 ---
 
-## Stop Wasting Time on Dependency Errors
+## 🚀 Why DARTX?
 
-Ever been slowed down by `ModuleNotFoundError`, `Cannot find module`, or cryptic environment issues? DARTX eliminates this friction. It identifies the root cause of dependency problems and offers instant, one-click solutions, letting you stay focused on building great software.
+Ever been slowed down by `ModuleNotFoundError`, `Cannot find module`, or cryptic environment issues? **DARTX eliminates this friction.** It identifies the root cause of dependency problems and offers instant, silent solutions, letting you stay focused on building great software.
 
-## Key Features
+---
 
-*   🤫 **Silent, Automatic Detection**: DARTX monitors your project for missing imports and dependency errors without ever getting in your way. No popups, no distractions.
+## ✨ Features at a Glance
 
-*   🚀 **One-Click Fixes**: When an issue is found, a subtle notification gives you the option to install the missing package with a single click.
+| Feature | Description |
+| :--- | :--- |
+| 🤫 **Silent Detection** | Monitors your project for missing imports & errors without popups. |
+| 🚀 **One-Click Fixes** | Instantly install missing packages right from a subtle notification. |
+| 🩺 **Environment Doctor** | Diagnose Python/Node.js versions, venvs, and PATH configs easily. |
+| 🧠 **Smart Mappings** | Knows that `import cv2` means you need `opencv-python`. |
+| 🛡️ **Safe & Secure** | Validates packages against PyPI/npm registries to prevent typosquatting. |
+| 📊 **Health Dashboard** | Get an at-a-glance overview of dependency health, unused packages, and conflicts. |
+| 🔄 **Dependency Sync** | Auto-sync actual installations with `requirements.txt` or `package.json`. |
+| 🤝 **Team Sharing** | Export your environment snapshot to easily share setups with your team. |
 
-*   🩺 **Environment Doctor**: Diagnose your entire development environment—Python/Node.js versions, virtual environments, and PATH configurations—to find and fix underlying issues.
-
-*   🧠 **Smart Recommendations**: DARTX knows that an `import cv2` error means you need to install `opencv-python`. It maintains a database of common mappings to provide accurate suggestions.
-
-*   🛡️ **Safe and Secure**: All suggested packages are validated against their respective registries (PyPI, npm) to protect against typosquatting. Commands are sanitized to prevent injection attacks.
-
-*   📊 **Health Dashboard**: Get an at-a-glance overview of your project's dependency health, including installed packages, conflicts, and unused dependencies.
-
-## How It Works
+## 🛠️ How It Works
 
 1.  **Code as usual**: Write your Python or Node.js code.
 2.  **Get a subtle alert**: If you import a missing package, DARTX shows a non-intrusive notification.
-3.  **Click to fix**: Click "Install" on the notification. DARTX runs the correct command for you in the terminal.
+3.  **Click to fix**: Click "Install" on the notification (or let Auto-Install handle it). DARTX runs the correct command for you in the background.
 
-That's it. You're back to coding.
+*That's it. You're back to coding.*
 
 ## Supported Languages
 
-*   **Python** (pip, venv, pyproject.toml, requirements.txt)
-*   **Node.js** (npm, yarn, pnpm, package.json)
+*   🐍 **Python** (`pip`, `venv`, `pyproject.toml`, `requirements.txt`)
+*   🟢 **Node.js** (`npm`, `yarn`, `pnpm`, `package.json`)
+
+---
 
 ## Quick Start
 
 1.  Install **DARTX** from the VS Code Marketplace.
 2.  Open a Python or Node.js project.
 3.  Start coding! DARTX will activate automatically when it's needed.
+    *Tip: Check the DARTX icon in the Activity Bar to view your real-time dashboard and logs.*
 
 ## Configuration
 
-The extension works out-of-the-box with no configuration needed. However, you can customize behavior with VS Code settings:
+DARTX works beautifully out-of-the-box, but you can tailor it to your exact workflow via VS Code settings:
 
-```json
+```jsonc
 {
-  // Ask for confirmation before installing a missing dependency.
-  "dartx.confirmBeforeInstall": false,
-
-  // Notification verbosity level: "detailed", "minimal", or "silent".
+  // How chatty should DARTX be? ("detailed", "minimal", or "silent")
   "dartx.notifications": "detailed",
 
-  // Automatically install missing dependencies when detected (requires one-time approval).
-  "dartx.autoInstall": false
+  // Let DARTX quietly fix missing packages for you.
+  "dartx.autoInstall": true,
+  
+  // Scan workspace for dependency issues automatically on save.
+  "dartx.scanOnSave": true
 }
 ```
 

@@ -43,7 +43,7 @@ export class SettingsManager {
     this.loadSettings();
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(event => {
-        if (event.affectsConfiguration('dependify')) {
+        if (event.affectsConfiguration('dartx')) {
           this.loadSettings();
           this.listeners.forEach(l => l());
         }
@@ -52,7 +52,7 @@ export class SettingsManager {
   }
 
   private loadSettings(): void {
-    const c = vscode.workspace.getConfiguration('dependify');
+    const c = vscode.workspace.getConfiguration('dartx');
 
     // Automation
     this.autoInstall = c.get<boolean>('autoInstall', false);
