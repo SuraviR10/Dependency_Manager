@@ -1,7 +1,7 @@
 {
   "name": "dartx",
-  "displayName": "DARTX - Dependency Analysis and Resolution Toolkit",
-  "description": "Proactive Dependency Doctor and Environment Management System. Automatically resolves missing packages, prevents clone-and-run issues, and visualizes impact.",
+  "displayName": "DARTX",
+  "description": "DARTX automatically detects and resolves dependency issues before they slow down your development workflow.",
   "version": "1.1.0",
   "publisher": "DependencyAssistant",
   "author": "Suravi R",
@@ -138,7 +138,7 @@
         {
           "id": "dartx",
           "title": "DARTX",
-          "icon": "media/icon.png"
+          "icon": "media/icon.svg"
         }
       ]
     },
@@ -146,16 +146,16 @@
       "dartx": [
         {
           "id": "smartDependencyPanel",
-          "name": "DARTX Assistant",
+          "name": "DARTX: Dependency Issues",
           "type": "webview",
-          "icon": "media/icon.png"
+          "icon": "media/icon.svg"
         },
         {
           "id": "dartActivityPanel",
-          "name": "DARTX Activity",
+          "name": "DARTX: Activity Log",
           "type": "webview",
           "visibility": "hidden",
-          "icon": "media/icon.png"
+          "icon": "media/icon.svg"
         }
       ]
     },
@@ -165,7 +165,7 @@
       "properties": {
         "dartx.autoInstall": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Automatically install missing dependencies when detected."
         },
         "dartx.confirmBeforeInstall": {
@@ -176,7 +176,7 @@
         "dartx.autoCreateEnv": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically create and configure environments for supported projects."
+          "description": "Automatically create and configure environments for supported projects. Note: This may run tasks in your terminal on startup."
         },
         "dartx.autoActivateEnv": {
           "type": "boolean",
@@ -226,11 +226,11 @@
         "dartx.healthCheck": {
           "type": "boolean",
           "default": true,
-          "description": "Enable dependency health checks and dashboard updates."
+          "description": "Enable dependency health checks and dashboard updates on user action."
         },
         "dartx.scanOnStartup": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Scan the workspace for dependency issues on startup."
         },
         "dartx.scanOnSave": {

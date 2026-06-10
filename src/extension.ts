@@ -38,6 +38,7 @@ import * as cp from 'child_process';
 import * as util from 'util';
 
 // Module-level singletons
+let extensionContext: vscode.ExtensionContext;
 let errorAnalyzer: ErrorAnalyzer;
 let dependencyScanner: DependencyScanner;
 let environmentManager: EnvironmentManager;
@@ -64,7 +65,8 @@ let workspaceDashboard: WorkspaceDashboard;
 let scanTimeout: NodeJS.Timeout | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
-  console.log("[Dependify] Activation Started");
+  console.log("[DARTX] Activation Started");
+  extensionContext = context;
 
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
 
@@ -73,30 +75,20 @@ export function activate(context: vscode.ExtensionContext): void {
   activityTracker    = new ActivityTracker();
   notificationManager = new NotificationManager(context);
   notificationManager.setNotificationLevel(settingsManager.notificationLevel);
-  console.log("[Dependify] Core Services Initialized");
+  console.log("[DARTX] Core Services Initialized");
 
   // Security layer
   executor           = new SafeCommandExecutor(activityTracker);
   packageValidator   = new PackageValidator();
   snapshotManager    = new SnapshotManager(workspacePath);
   conflictDetector   = new ConflictDetector(workspacePath);
-  console.log("[Dependify] Security Layer Initialized");
+  console.log("[DARTX] Security Layer Initialized");
 
   // Analysis
   errorAnalyzer      = new ErrorAnalyzer(workspacePath);
   dependencyScanner  = new DependencyScanner(workspacePath);
   commandGenerator   = new InstallCommandGenerator();
-  console.log("[Dependify] Scanner Initialized");
-
-  // New Feature Services
-  environmentDoctor  = new EnvironmentDoctor(workspacePath);
-  projectSetupWizard = new ProjectSetupWizard(workspacePath, environmentManager, dependencyScanner);
-  dependencySync     = new DependencySync(workspacePath);
-  packageRecommender = new PackageRecommender();
-  teamEnvironmentSharing = new TeamEnvironmentSharing(workspacePath);
-  enhancedConflictResolver = new EnhancedConflictResolver(workspacePath);
-  workspaceDashboard = new WorkspaceDashboard(workspacePath, dependencyScanner);
-  console.log("[Dependify] Feature Services Initialized");
+  console.log("[DARTX] Scanner Initialized");
 
   // Commands & environment
   commandRegistry    = new CommandRegistry(context, commandGenerator, executor);
@@ -106,7 +98,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // UI
   webviewProvider       = new WebviewProvider(context, commandGenerator);
   activityPanelProvider = new ActivityPanelProvider(context, activityTracker);
-  console.log("[Dependify] Dashboard Ready");
+  console.log("[DARTX] Dashboard Ready");
 
   // Install queue (uses executor for safety)
   installQueue = new InstallQueue(
@@ -125,7 +117,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Register commands
   commandRegistry.registerCommands();
 
-  // Register webview providers
+  // Register webview providers for sidebar panels
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider('smartDependencyPanel', webviewProvider),
     vscode.window.registerWebviewViewProvider('smartActivityPanel', activityPanelProvider)
@@ -140,7 +132,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Start terminal monitoring
   terminalMonitor.startMonitoring();
 
-  // Initial scan
+  // Initial scan is now off by default to improve startup performance.
   if (settingsManager.scanOnStartup && settingsManager.healthCheck) {
     setTimeout(() => { void refreshHealthDashboard(); }, 1200);
   }
@@ -152,11 +144,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
   activityTracker.logActivity(
     ActivityType.ScanCompleted, ActivitySeverity.Info,
-    'Dependify Ready',
+    'DARTX Ready',
     { description: 'Extension initialized and monitoring for dependency issues' }
   );
 
-  console.log("[Dependify] Activation Completed");
+  console.log("[DARTX] Activation Completed");
 }
 
 // ─── Health Dashboard ─────────────────────────────────────────────────────────
@@ -249,7 +241,7 @@ function setupWorkspaceListeners(context: vscode.ExtensionContext): void {
             processDiagnostics(vscode.languages.getDiagnostics(doc.uri));
           } 
         } catch (error) {
-          console.error('[Dependify] Non-blocking error during save diagnostics:', error);
+          console.error('[DARTX] Non-blocking error during save diagnostics:', error);
         }
       })
     );
@@ -350,7 +342,12 @@ function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
           'bs4': 'beautifulsoup4',
           'PIL': 'Pillow',
           'yaml': 'PyYAML',
-          'dotenv': 'python-dotenv'
+          'dotenv': 'python-dotenv',
+          'jwt': 'PyJWT',
+          'redis': 'redis',
+          'requests': 'requests',
+          'sqlalchemy': 'SQLAlchemy',
+          'dateutil': 'python-dateutil'
         };
         if (packageMap[packageName]) {
           packageName = packageMap[packageName];
@@ -380,7 +377,7 @@ function processDiagnostics(diagnostics: vscode.Diagnostic[]): void {
       void handleDependencyIssue(issue);
     }
   } catch (error) {
-    console.error('[Dependify] Non-blocking error in diagnostic processing:', error);
+    console.error('[DARTX] Non-blocking error in diagnostic processing:', error);
   }
 }
 
@@ -403,59 +400,94 @@ async function handleDependencyIssue(issue: DependencyIssue): Promise<void> {
     return;
   }
 
+  // Feature: Memory of previous fixes. Check if we have a known good fix.
+  const fixHistory = extensionContext.globalState.get<Record<string, string>>('dartx.fixHistory', {});
+  const issueKey = `${issue.language}:${issue.packageName}`;
+  if (fixHistory[issueKey]) {
+    issue.suggestedCommand = fixHistory[issueKey];
+    issue.confidence = 100; // Previously successful fix, max confidence.
+    issue.explanation += " A previously successful fix for this issue was found and will be used.";
+  }
+
   let generatedCmd = commandGenerator.generateCommand(issue).command;
   issue.suggestedCommand = generatedCmd;
 
-  // Hybrid AI Explanation integration
-  try {
-    const models = await vscode.lm.selectChatModels({ family: 'gpt-4' });
-    if (models && models.length > 0) {
-      const messages = [vscode.LanguageModelChatMessage.User(`Explain this dependency error simply to a beginner: ${issue.originalError}`)];
-      const chatResponse = await models[0].sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
-      let aiText = '';
-      for await (const fragment of chatResponse.text) {
-        aiText += fragment;
-      }
-      if (aiText) {
-        issue.explanation = aiText;
-      }
-    }
-  } catch (e) {
-    // Fallback to local regex explanation
-  }
-
-  webviewProvider.displayIssue(issue);
-  activityTracker.logErrorDetected('Dependency Issue', issue.packageName);
-  notificationManager.showStatusMessage(`Dependify: Detected missing package "${issue.packageName}"`, 4500);
-
-  if (!settingsManager.shouldAutoInstall()) {
-    notificationManager.showInfo(
-      `Missing dependency: "${issue.packageName}". Run: ${issue.suggestedCommand}`
-    );
-    return;
-  }
-
-  // Pre-install: verify package exists in registry
+  // Improvement: Verify package exists before notifying user to improve accuracy and prevent typosquatting.
   if (settingsManager.verifyPackagesBeforeInstall) {
     const validation = await packageValidator.verify(issue.packageName, issue.language);
     if (!validation.exists) {
-      void vscode.window.showWarningMessage(
-        `Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
+      notificationManager.appendLog(
+        `[Accuracy] Ignored non-existent package suggestion: "${issue.packageName}".`
       );
-      return;
+      return; // Silently drop the issue, preventing a false-positive notification.
     }
+    // If package is real, boost confidence.
+    issue.confidence = Math.min(100, (issue.confidence || 80) + 15);
   }
 
-  const canInstall = !settingsManager.shouldConfirmBeforeInstall() ||
-    await commandRegistry.showInstallConfirmation(issue);
-  if (!canInstall) { return; }
+  // Improvement: Removed external AI call for explanations to improve performance and reliability.
+  // try {
+  //   const models = await vscode.lm.selectChatModels({ family: 'gpt-4' });
+  //   ...
+  // } catch (e) {
+  //   // Fallback to local regex explanation
+  // }
 
-  // Snapshot before install for rollback
-  await snapshotManager.capture(`Before install ${issue.packageName}`);
+  activityTracker.logErrorDetected('Dependency Issue', issue.packageName);
 
+  // UX Change: Silent-first design. Use notifications, not automatic panel opening.
+  const hasBeenPrompted = extensionContext.globalState.get('dartx.promptedForAutoInstall', false);
+
+  // 1. Auto-install if enabled and confidence is high (e.g., >95)
+  if (settingsManager.shouldAutoInstall() && issue.confidence > 95) {
+    notificationManager.showStatusMessage(`DARTX: Auto-installing ${issue.packageName}...`, 3000);
+    await performAutoInstall(issue);
+    return;
+  }
+
+  // 2. First-time user experience: Prompt to enable auto-install
+  if (!settingsManager.shouldAutoInstall() && !hasBeenPrompted) {
+    await extensionContext.globalState.update('dartx.promptedForAutoInstall', true);
+    const choice = await notificationManager.showWithActions(
+      `DARTX: Detected missing package '${issue.packageName}'. Enable automatic installation for trusted packages?`,
+      ['Enable Auto-Install', 'Install Once', 'View Details']
+    );
+
+    if (choice === 'Enable Auto-Install') {
+      // FIX: settingsManager.update does not exist. Call vscode config API directly.
+      await vscode.workspace.getConfiguration('dartx').update('autoInstall', true, vscode.ConfigurationTarget.Global);
+      notificationManager.showStatusMessage('DARTX: Auto-install enabled. Installing...', 3000);
+      await performAutoInstall(issue);
+    } else if (choice === 'Install Once') {
+      await performManualInstall(issue);
+    } else if (choice === 'View Details') {
+      webviewProvider.displayIssue(issue);
+    }
+  } else {
+    // 3. Standard notification for returning users or those with auto-install disabled
+    const choice = await notificationManager.showWithActions(
+      `DARTX: Detected missing package '${issue.packageName}'.`,
+      ['Install', 'View Details']
+    );
+    if (choice === 'Install') {
+      await performManualInstall(issue);
+    } else if (choice === 'View Details') {
+      webviewProvider.displayIssue(issue);
+    }
+  }
+}
+
+async function performAutoInstall(issue: DependencyIssue): Promise<void> {
+  // Enqueue for installation without user confirmation, as they've opted in.
   installQueue.enqueue(issue, issue.suggestedCommand);
 }
 
+async function performManualInstall(issue: DependencyIssue): Promise<void> {
+  const canInstall = !settingsManager.shouldConfirmBeforeInstall() || await commandRegistry.showInstallConfirmation(issue);
+  if (canInstall) {
+    installQueue.enqueue(issue, issue.suggestedCommand);
+  }
+}
 async function processTerminalOutput(output: string): Promise<void> {
   if (!output) { return; }
   const result = errorAnalyzer.analyzeError(output);
@@ -480,21 +512,33 @@ function setupCommandHandlers(_context: vscode.ExtensionContext): void {
 
   // New Feature Commands
   _context.subscriptions.push(
-    vscode.commands.registerCommand('smartDependencyAssistant.runEnvironmentDoctor', async () => {
-      await handleEnvironmentDoctorCommand();
-    }),
-    vscode.commands.registerCommand('smartDependencyAssistant.setupProject', async () => {
-      await handleProjectSetupCommand();
-    }),
-    vscode.commands.registerCommand('smartDependencyAssistant.syncDependencies', async () => {
-      await handleDependencySyncCommand();
-    }),
-    vscode.commands.registerCommand('smartDependencyAssistant.exportEnvironment', async () => {
-      await handleExportEnvironmentCommand();
-    }),
-    vscode.commands.registerCommand('smartDependencyAssistant.showDashboard', async () => {
-      await handleShowDashboardCommand();
-    })
+      vscode.commands.registerCommand('dartx.runEnvironmentDoctor', async () => {
+          await handleEnvironmentDoctorCommand();
+      }),
+      vscode.commands.registerCommand('dartx.setupProject', async () => {
+          await handleProjectSetupCommand();
+      }),
+      vscode.commands.registerCommand('dartx.syncDependencies', async () => {
+          await handleDependencySyncCommand();
+      }),
+      vscode.commands.registerCommand('dartx.exportEnvironment', async () => {
+          await handleExportEnvironmentCommand();
+      }),
+      vscode.commands.registerCommand('dartx.showDashboard', async () => {
+          await handleShowDashboardCommand();
+      }),
+      // Legacy command IDs for compatibility, can be removed in a future version
+      vscode.commands.registerCommand('smartDependencyAssistant.runEnvironmentDoctor', handleEnvironmentDoctorCommand),
+      vscode.commands.registerCommand('smartDependencyAssistant.setupProject', handleProjectSetupCommand),
+      vscode.commands.registerCommand('smartDependencyAssistant.syncDependencies', handleDependencySyncCommand),
+      vscode.commands.registerCommand('smartDependencyAssistant.exportEnvironment', handleExportEnvironmentCommand),
+      vscode.commands.registerCommand('smartDependencyAssistant.showDashboard', handleShowDashboardCommand),
+      vscode.commands.registerCommand('smartDependencyAssistant.checkTerminal', () => {
+        const active = vscode.window.activeTerminal;
+        if (active) {
+          void processTerminalOutput(terminalMonitor.getTerminalOutput(active));
+        }
+      })
   );
 }
 
@@ -519,8 +563,8 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
       const validation = await packageValidator.verify(issue.packageName, issue.language);
       if (!validation.exists) {
         webviewProvider.updateInstallationStatus('error', `Package "${issue.packageName}" not found in registry`);
-        void vscode.window.showWarningMessage(
-          `Dependify: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
+        notificationManager.showWarning(
+          `DARTX: Package "${issue.packageName}" was not found in the registry. Installation cancelled.`
         );
         return;
       }
@@ -533,6 +577,13 @@ async function handleInstallCommand(issue: DependencyIssue): Promise<void> {
 
     if (success) {
       webviewProvider.updateInstallationStatus('success');
+
+      // Feature: Memory of previous fixes. Store the successful fix.
+      const fixHistory = extensionContext.globalState.get<Record<string, string>>('dartx.fixHistory', {});
+      const issueKey = `${issue.language}:${issue.packageName}`;
+      fixHistory[issueKey] = commandToExecute;
+      await extensionContext.globalState.update('dartx.fixHistory', fixHistory);
+
       notificationManager.showInstallationSuccess(issue.packageName);
       activityTracker.logDependencyInstalled(issue.packageName);
       activityTracker.logCommand(commandToExecute, issue.packageName, true);
@@ -615,10 +666,15 @@ async function handleCleanupCommand(): Promise<void> {
 
 async function handleEnvironmentDoctorCommand(): Promise<void> {
   notificationManager.showStatusMessage('Running Environment Doctor...', 3000);
+  const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+
+  // Lazy loading of the service
+  if (!environmentDoctor) {
+    environmentDoctor = new EnvironmentDoctor(workspacePath);
+  }
   
   try {
-    const report = await environmentDoctor.diagnose();
-    const output = vscode.window.createOutputChannel('Dependify: Environment Doctor');
+    const report = await environmentDoctor.diagnose();    const output = vscode.window.createOutputChannel('DARTX: Environment Doctor');
     output.clear();
     output.show();
 
@@ -678,12 +734,18 @@ async function handleEnvironmentDoctorCommand(): Promise<void> {
       { description: `Health score: ${report.healthScore}/100, Issues: ${report.issues.length}` }
     );
   } catch (error) {
-    vscode.window.showErrorMessage(`Environment Doctor failed: ${error}`);
+    notificationManager.showError(`Environment Doctor failed: ${error}`);
   }
 }
 
 async function handleProjectSetupCommand(): Promise<void> {
   notificationManager.showStatusMessage('Analyzing project...', 3000);
+  const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+
+  // Lazy loading of the service
+  if (!projectSetupWizard) {
+    projectSetupWizard = new ProjectSetupWizard(workspacePath, environmentManager, dependencyScanner);
+  }
 
   try {
     const projectInfo = await projectSetupWizard.analyzeProject();
@@ -711,12 +773,18 @@ async function handleProjectSetupCommand(): Promise<void> {
       );
     }
   } catch (error) {
-    vscode.window.showErrorMessage(`Project setup failed: ${error}`);
+    notificationManager.showError(`Project setup failed: ${error}`);
   }
 }
 
 async function handleDependencySyncCommand(): Promise<void> {
   notificationManager.showStatusMessage('Syncing dependencies...', 2000);
+  const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+
+  // Lazy loading of the service
+  if (!dependencySync) {
+    dependencySync = new DependencySync(workspacePath);
+  }
 
   try {
     const [pythonResult, nodeResult] = await Promise.all([
@@ -724,7 +792,7 @@ async function handleDependencySyncCommand(): Promise<void> {
       dependencySync.syncNodeDependencies(),
     ]);
 
-    const output = vscode.window.createOutputChannel('Dependify: Dependency Sync');
+    const output = vscode.window.createOutputChannel('DARTX: Dependency Sync');
     output.clear();
     output.show();
 
@@ -746,9 +814,9 @@ async function handleDependencySyncCommand(): Promise<void> {
       { description: 'Installed packages synchronized with manifest files' }
     );
 
-    vscode.window.showInformationMessage('Dependencies synced successfully!');
+    notificationManager.showInfo('Dependencies synced successfully!');
   } catch (error) {
-    vscode.window.showErrorMessage(`Dependency sync failed: ${error}`);
+    notificationManager.showError(`Dependency sync failed: ${error}`);
   }
 }
 
@@ -764,11 +832,17 @@ async function handleExportEnvironmentCommand(): Promise<void> {
     prompt: 'Add a description (optional):',
   });
 
+  // FIX: Lazy load the service to prevent "used before being assigned" error.
+  const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+  if (!teamEnvironmentSharing) {
+    teamEnvironmentSharing = new TeamEnvironmentSharing(workspacePath);
+  }
+
   try {
     notificationManager.showStatusMessage('Exporting environment...', 2000);
     const snapshot = await teamEnvironmentSharing.exportEnvironment(name, description);
     
-    vscode.window.showInformationMessage(
+    notificationManager.showInfo(
       `Environment exported: ${snapshot.id}. You can share the .dependify-snapshots folder with your team.`
     );
 
@@ -778,11 +852,18 @@ async function handleExportEnvironmentCommand(): Promise<void> {
       { description: `Snapshot: ${name}` }
     );
   } catch (error) {
-    vscode.window.showErrorMessage(`Export failed: ${error}`);
+    notificationManager.showError(`Export failed: ${error}`);
   }
 }
 
 async function handleShowDashboardCommand(): Promise<void> {
+  const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+
+  // Lazy loading of the service
+  if (!workspaceDashboard) {
+    workspaceDashboard = new WorkspaceDashboard(workspacePath, dependencyScanner);
+  }
+
   try {
     const scan = await dependencyScanner.scanWorkspace(settingsManager?.supportedLanguages);
     const conflicts = await conflictDetector.detectConflicts(SupportedLanguage.Python);
@@ -791,7 +872,7 @@ async function handleShowDashboardCommand(): Promise<void> {
     const html = workspaceDashboard.generateHTML(dashboard);
 
     const panel = vscode.window.createWebviewPanel(
-      'dependifyDashboard',
+      'dartxDashboard',
       'Dependency Dashboard',
       vscode.ViewColumn.One,
       { enableScripts: true }
@@ -805,7 +886,7 @@ async function handleShowDashboardCommand(): Promise<void> {
       { description: `Health Score: ${dashboard.overallScore}/100` }
     );
   } catch (error) {
-    vscode.window.showErrorMessage(`Dashboard failed: ${error}`);
+    notificationManager.showError(`Dashboard failed: ${error}`);
   }
 }
 

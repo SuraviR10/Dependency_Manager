@@ -2,149 +2,59 @@
   <img src="media/icon.png" alt="DARTX Logo" width="128"/>
 </p>
 
-# DARTX (Smart Dependency Assistant)
+<h1 align="center">DARTX</h1>
 
-A production-ready VS Code extension that helps developers quickly identify and resolve dependency-related issues while coding.
+<p align="center">
+<strong>Stop wrestling with dependencies. Start coding.</strong>
+</p>
 
-![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![VS Code Version](https://img.shields.io/badge/VS%20Code-1.85+-blue.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)
+<p align="center">
+  DARTX is a smart, lightweight assistant that automatically detects and resolves dependency issues in Python and Node.js projects before they interrupt your workflow. It works silently in the background to save you time and prevent configuration headaches.
+</p>
 
-## Features
+<p align="center">
+  <!-- Placeholder for a GIF demonstrating the extension in action -->
+  <img src="https://raw.githubusercontent.com/SuraviR10/Dependency_Manager/main/media/demo.gif" alt="DARTX Demo"/>
+</p>
 
-🎯 **Smart Dependency Detection**
-- Automatically monitors terminal output for dependency-related errors
-- Detects missing packages, version conflicts, and environment issues
-- Supports Python and Node.js projects
+---
 
-📦 **Beginner-Friendly Explanations**
-- Converts technical error messages into simple, understandable language
-- Explains what went wrong and why
-- Provides context-aware solutions
+## Stop Wasting Time on Dependency Errors
 
-🚀 **One-Click Installation**
-- Generates correct installation commands for detected packages
-- Provides copy-to-clipboard functionality
-- Optional one-click installation with safety checks
-- Shows alternative installation methods
+Ever been slowed down by `ModuleNotFoundError`, `Cannot find module`, or cryptic environment issues? DARTX eliminates this friction. It identifies the root cause of dependency problems and offers instant, one-click solutions, letting you stay focused on building great software.
 
-🎨 **Beautiful UI**
-- Clean, modern webview panel in VS Code
-- Dark mode support
-- Real-time status updates
-- Confidence indicators for detection accuracy
+## Key Features
 
-## Supported Errors
+*   🤫 **Silent, Automatic Detection**: DARTX monitors your project for missing imports and dependency errors without ever getting in your way. No popups, no distractions.
 
-### Python
-- `ModuleNotFoundError: No module named 'package'`
-- `ImportError: No module named 'package'`
-- `cannot import name 'module'`
-- Version conflicts and environment issues
+*   🚀 **One-Click Fixes**: When an issue is found, a subtle notification gives you the option to install the missing package with a single click.
 
-### Node.js
-- `Cannot find module 'package'`
-- `MODULE_NOT_FOUND`
-- `npm ERR! 404` (package not found)
-- `ERESOLVE` (dependency conflicts)
+*   🩺 **Environment Doctor**: Diagnose your entire development environment—Python/Node.js versions, virtual environments, and PATH configurations—to find and fix underlying issues.
 
-## Installation
+*   🧠 **Smart Recommendations**: DARTX knows that an `import cv2` error means you need to install `opencv-python`. It maintains a database of common mappings to provide accurate suggestions.
 
-1. Open VS Code
-2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
-3. Search for "Smart Dependency Assistant"
-4. Click Install
+*   🛡️ **Safe and Secure**: All suggested packages are validated against their respective registries (PyPI, npm) to protect against typosquatting. Commands are sanitized to prevent injection attacks.
 
-## How to Use
+*   📊 **Health Dashboard**: Get an at-a-glance overview of your project's dependency health, including installed packages, conflicts, and unused dependencies.
 
-### Basic Usage
+## How It Works
 
-1. **Run your code** - Execute your Python script or Node.js application in the terminal
-2. **Get notified** - When a dependency error occurs, the extension detects it
-3. **Review the issue** - The Smart Dependency Panel explains what's wrong
-4. **Install the package** - Click "Install Package" or copy the command manually
+1.  **Code as usual**: Write your Python or Node.js code.
+2.  **Get a subtle alert**: If you import a missing package, DARTX shows a non-intrusive notification.
+3.  **Click to fix**: Click "Install" on the notification. DARTX runs the correct command for you in the terminal.
 
-### Manual Check
+That's it. You're back to coding.
 
-If you want to manually check your terminal output:
-1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
-2. Type "Smart Dependency Assistant: Check Terminal"
-3. The extension will analyze the current terminal output
+## Supported Languages
 
-## Project Structure
+*   **Python** (pip, venv, pyproject.toml, requirements.txt)
+*   **Node.js** (npm, yarn, pnpm, package.json)
 
-```
-src/
-├── extension.ts              # Main entry point
-├── analyzer/
-│   ├── errorAnalyzer.ts     # Error detection and analysis
-│   ├── languageDetector.ts  # Detects project language
-│   └── dependencyParser.ts  # Parses dependency files
-├── commands/
-│   ├── installCommandGenerator.ts  # Generates install commands
-│   └── commandRegistry.ts          # Registers VS Code commands
-├── terminal/
-│   └── terminalMonitor.ts   # Monitors terminal output
-├── ui/
-│   ├── webviewProvider.ts   # Webview UI panel
-│   └── notificationManager.ts # Handle notifications
-├── types/
-│   └── types.ts             # TypeScript type definitions
-└── utils/
-    └── helpers.ts           # Utility functions
-```
+## Quick Start
 
-## Development
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- VS Code 1.85+
-- TypeScript 5.3+
-
-### Setup
-
-```bash
-# Clone or create project
-cd smart-dependency-assistant
-
-# Install dependencies
-npm install
-
-# Compile TypeScript
-npm run compile
-
-# Watch mode (for development)
-npm run watch
-```
-
-### Build and Package
-
-```bash
-# Compile with optimizations
-npm run vscode:prepublish
-
-# Create VSIX package for distribution
-npx vsce package
-```
-
-### Running Locally
-
-1. Open the project in VS Code
-2. Press `F5` to start debugging
-3. A new VS Code window will open with the extension loaded
-4. Test by running Python or Node.js commands that trigger dependency errors
-
-### Running Tests
-
-```bash
-# Run test suite
-npm test
-
-# Run with coverage
-npm test -- --coverage
-```
+1.  Install **DARTX** from the VS Code Marketplace.
+2.  Open a Python or Node.js project.
+3.  Start coding! DARTX will activate automatically when it's needed.
 
 ## Configuration
 
@@ -152,10 +62,14 @@ The extension works out-of-the-box with no configuration needed. However, you ca
 
 ```json
 {
-  "smartDependencyAssistant.autoInstall": false,
-  "smartDependencyAssistant.showNotifications": true,
-  "smartDependencyAssistant.confidenceThreshold": 60,
-  "smartDependencyAssistant.languages": ["python", "nodejs"]
+  // Ask for confirmation before installing a missing dependency.
+  "dartx.confirmBeforeInstall": false,
+
+  // Notification verbosity level: "detailed", "minimal", or "silent".
+  "dartx.notifications": "detailed",
+
+  // Automatically install missing dependencies when detected (requires one-time approval).
+  "dartx.autoInstall": false
 }
 ```
 
