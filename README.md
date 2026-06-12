@@ -23,6 +23,10 @@
   <img src="https://raw.githubusercontent.com/SuraviR10/Dependency_Manager/main/media/demo.gif" alt="DARTX Demo"/>
 </p>
 
+<p align="center">
+  <b>🌐 <a href="https://suravir10.github.io/Dependency_Manager/">Visit the Official Website</a></b> for detailed guides, use-cases, and features!
+</p>
+
 ---
 
 ## 🚀 Why DARTX?
@@ -42,7 +46,7 @@ Ever been slowed down by `ModuleNotFoundError`, `Cannot find module`, or cryptic
 | 🛡️ **Safe & Secure** | Validates packages against PyPI/npm registries to prevent typosquatting. |
 | 📊 **Health Dashboard** | Get an at-a-glance overview of dependency health, unused packages, and conflicts. |
 | 🔄 **Dependency Sync** | Auto-sync actual installations with `requirements.txt` or `package.json`. |
-| 🤝 **Team Sharing** | Export your environment snapshot to easily share setups with your team. |
+| 🤝 **Team Sharing** | Export your environment snapshot to easily share setups securely with your team. |
 
 ## 🛠️ How It Works
 
@@ -139,6 +143,14 @@ The extension implements multiple safety layers:
 ✅ **Confidence Scoring** - Only acts on high-confidence detections  
 ✅ **User Approval** - Requires explicit approval before installation  
 ✅ **Terminal Execution** - Runs commands visibly in user's terminal  
+
+### Corruption Prevention
+DARTX is built securely to guarantee your code and computer stay safe:
+- **Zero Dependencies Download**: The extension is bundled completely into one file (`esbuild`), meaning it won't get corrupted by partial downloads or missing `node_modules` during installation.
+- **Registry Verification**: `PackageValidator` ensures DARTX will only run an install command if the dependency genuinely exists on the official PyPI or NPM registries.
+- **Environment Snapshots**: Built-in environment snapshots (`dartx.exportEnvironment`) automatically back up your state. If an installation breaks your workspace, DARTX can immediately rollback without leaving corrupt packages behind.
+- **No Arbitrary Code Execution**: No external ML models or black-box servers. DARTX relies strictly on localized Regex pattern-matching.
+
 
 ## Limitations
 

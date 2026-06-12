@@ -37,6 +37,16 @@ export class TerminalMonitor {
       })
     );
 
+    // Monitor shell command executions using the VS Code 1.93+ API
+    // This safely streams the output of scripts/commands run in the terminal
+    if (vscode.window.onDidStartTerminalShellExecution) {
+      this.subscriptions.push(
+        vscode.window.onDidStartTerminalShellExecution((event) => {
+          void this.handleShellExecution(event);
+        })
+      );
+    }
+
     console.log('[TerminalMonitor] Started monitoring terminals');
   }
 
@@ -66,6 +76,29 @@ export class TerminalMonitor {
     // Note: VS Code doesn't provide direct terminal output events
     // We'll use the approach of monitoring via extension commands or polling
     // This is a limitation of the VS Code API
+  }
+
+  /**
+   * Handle terminal shell execution and read output
+   */
+  private async handleShellExecution(event: vscode.TerminalShellExecutionStartEvent): Promise<void> {
+    try {
+      let output = '';
+      // Stream the execution output as it happens
+      for await (const data of event.execution.read()) {
+        output += data;
+        // Keep the buffer at a reasonable size to prevent memory issues for long-running scripts
+        if (output.length > this.maxBufferSize * 2) {
+          output = output.slice(-this.maxBufferSize);
+        }
+      }
+      // Process the accumulated output for errors once the execution is fully finished
+      if (output.trim()) {
+        this.processOutput(output, event.terminal);
+      }
+    } catch (e) {
+      console.error('[TerminalMonitor] Error reading shell execution output:', e);
+    }
   }
 
   /**

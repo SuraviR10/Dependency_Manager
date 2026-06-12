@@ -14,9 +14,9 @@
   "bugs": {
     "url": "https://github.com/SuraviR10/Dependency_Manager/issues"
   },
-  "homepage": "https://github.com/SuraviR10/Dependency_Manager#readme",
+  "homepage": "https://suravir10.github.io/Dependency_Manager/",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.93.0"
   },
   "categories": [
     "Programming Languages",
@@ -298,7 +298,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.0",
-    "@types/vscode": "^1.85.0",
+    "@types/vscode": "^1.93.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
     "@vscode/test-electron": "^2.3.8",
